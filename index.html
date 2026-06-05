@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Grid Co. — Dashboard O&M Solar</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   GRID CO. — BRAND DESIGN SYSTEM
+   Primary:   #191528 (navy dark)
+   Secondary: #504C63 (purple-slate)
+   Accent:    #A9DB21 (lime green)
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --bg:       #0c0a16;
+  --bg2:      #191528;
+  --card:     #1e1b2e;
+  --card2:    #252140;
+  --card3:    #2d2945;
+  --border:   rgba(169,219,33,0.08);
+  --border2:  rgba(169,219,33,0.14);
+  --border3:  rgba(169,219,33,0.22);
+  --borderw:  rgba(255,255,255,0.06);
+  /* Brand */
+  --lime:     #a9db21;
+  --lime-dim: rgba(169,219,33,0.10);
+  --lime-glow:rgba(169,219,33,0.28);
+  --lime-soft:rgba(169,219,33,0.06);
+  --navy:     #191528;
+  --slate:    #504c63;
+  --slate-dim:rgba(80,76,99,0.30);
+  /* Functional accents */
+  --blue:     #5eb3f5;
+  --blue-dim: rgba(94,179,245,0.10);
+  --amber:    #f5c842;
+  --amber-dim:rgba(245,200,66,0.10);
+  --red:      #f56565;
+  --red-dim:  rgba(245,101,101,0.10);
+  --orange:   #f5915e;
+  --orange-dim:rgba(245,145,94,0.10);
+  --teal:     #5ef5d8;
+  --teal-dim: rgba(94,245,216,0.10);
+  --violet:   #a085f5;
+  --violet-dim:rgba(160,133,245,0.10);
+  /* Text */
+  --text:     #edf0fa;
+  --text2:    #8a91b8;
+  --text3:    #454870;
+  --text4:    #2c2f52;
+  /* Radius */
+  --r:  14px;
+  --rs: 8px;
+  --rm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:
+    radial-gradient(ellipse 100% 50% at 50% 0%, rgba(169,219,33,0.05) 0%, transparent 55%),
+    var(--bg);
+  background-attachment:local;
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+
+/* ── AMBIENT BACKGROUND ── */
+/* Background effects moved to body to avoid fixed stacking context issues */
+
+
+/* ══════════════════════════════════════════════════
+   HEADER
+   ══════════════════════════════════════════════════ */
+header{
+  position:sticky;top:0;z-index:200;
+  height:60px;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(12,10,22,0.97);
+  border-bottom:1px solid var(--border2);
+}
+header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(169,219,33,0.3),transparent);
+}
+.hlogo{display:flex;align-items:center;gap:13px;}
+.hlogo-sym{
+  width:36px;height:36px;border-radius:9px;
+  object-fit:cover;flex-shrink:0;
+  box-shadow:0 0 18px rgba(169,219,33,0.3);
+}
+.hlogo-right{display:flex;flex-direction:column;gap:2px;}
+.hlogo-wordmark{height:20px;width:auto;object-fit:contain;}
+.hlogo-sub{
+  font-size:9px;color:var(--text4);
+  letter-spacing:.8px;text-transform:uppercase;
+}
+.hright{display:flex;align-items:center;gap:10px;}
+.hbadge{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;
+  background:rgba(169,219,33,0.08);
+  border:1px solid rgba(169,219,33,0.18);
+  border-radius:20px;
+  font-size:10px;color:var(--lime);font-weight:700;letter-spacing:.3px;
+}
+.hdot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--lime);
+  animation:pulse 2s ease infinite;
+  box-shadow:0 0 6px var(--lime);
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.7);}}
+.hdate{font-size:11px;color:var(--text3);}
+
+/* ══════════════════════════════════════════════════
+   FILTER BANNER
+   ══════════════════════════════════════════════════ */
+.filter-active-banner{
+  display:none;align-items:center;gap:12px;
+  padding:9px 28px;
+  background:rgba(169,219,33,0.05);
+  border-bottom:1px solid rgba(169,219,33,0.15);
+  font-size:12px;color:var(--lime);
+  position:relative;z-index:9;
+}
+.filter-active-banner.show{display:flex;}
+.fab-close{
+  background:rgba(169,219,33,0.1);
+  border:1px solid rgba(169,219,33,0.22);
+  border-radius:var(--rs);
+  padding:3px 11px;font-size:10px;font-weight:700;
+  cursor:pointer;color:var(--lime);
+  font-family:'DM Sans',sans-serif;
+  transition:all .18s;
+}
+.fab-close:hover{background:rgba(169,219,33,0.18);}
+
+/* ══════════════════════════════════════════════════
+   MAIN
+   ══════════════════════════════════════════════════ */
+main{padding:24px 28px;position:relative;z-index:1;max-width:1680px;margin:0 auto;}
+
+/* SECTION TITLES */
+.sec{
+  font-family:'Syne',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:2.2px;text-transform:uppercase;
+  color:var(--text3);margin-bottom:14px;
+  display:flex;align-items:center;gap:12px;
+}
+.sec-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--lime);flex-shrink:0;
+  box-shadow:0 0 8px var(--lime);
+}
+.sec::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ══════════════════════════════════════════════════
+   KPI CARDS
+   ══════════════════════════════════════════════════ */
+.kgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+@media(max-width:1280px){.kgrid{grid-template-columns:repeat(3,1fr);}}
+.kcard{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:20px;
+  position:relative;overflow:hidden;
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1),box-shadow .28s,border-color .2s;
+  animation:fadeUp .5s ease both;
+  cursor:default;
+}
+.kcard:hover{transform:translateY(-4px);box-shadow:0 14px 44px rgba(0,0,0,.55),0 0 0 1px rgba(169,219,33,0.12);}
+.kcard::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  border-radius:var(--r) var(--r) 0 0;
+}
+.kcard.lime::before{background:linear-gradient(90deg,var(--lime),transparent);}
+.kcard.blue::before{background:linear-gradient(90deg,var(--blue),transparent);}
+.kcard.amber::before{background:linear-gradient(90deg,var(--amber),transparent);}
+.kcard.slate::before{background:linear-gradient(90deg,#7a74a0,transparent);}
+.kcard.violet::before{background:linear-gradient(90deg,var(--violet),transparent);}
+.kcard.orange::before{background:linear-gradient(90deg,var(--orange),transparent);}
+.kglow{
+  position:absolute;width:90px;height:90px;border-radius:50%;
+  top:-25px;right:-25px;opacity:.09;filter:blur(32px);
+}
+.kcard.lime .kglow{background:var(--lime);}
+.kcard.blue .kglow{background:var(--blue);}
+.kcard.amber .kglow{background:var(--amber);}
+.kcard.slate .kglow{background:#7a74a0;}
+.kcard.violet .kglow{background:var(--violet);}
+.kcard.orange .kglow{background:var(--orange);}
+.kicon{
+  width:34px;height:34px;border-radius:var(--rs);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;margin-bottom:13px;
+  position:relative;z-index:1;
+}
+.kcard.lime .kicon{background:var(--lime-dim);}
+.kcard.blue .kicon{background:var(--blue-dim);}
+.kcard.amber .kicon{background:var(--amber-dim);}
+.kcard.slate .kicon{background:rgba(80,76,99,0.2);}
+.kcard.violet .kicon{background:var(--violet-dim);}
+.kcard.orange .kicon{background:var(--orange-dim);}
+.klbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.9px;font-weight:700;margin-bottom:5px;}
+.kval{
+  font-family:'Syne',sans-serif;font-size:32px;font-weight:800;
+  line-height:1;letter-spacing:-1.5px;margin-bottom:3px;
+  position:relative;z-index:1;
+}
+.kcard.lime .kval{color:var(--lime);}
+.kcard.blue .kval{color:var(--blue);}
+.kcard.amber .kval{color:var(--amber);}
+.kcard.slate .kval{color:#a098c8;}
+.kcard.violet .kval{color:var(--violet);}
+.kcard.orange .kval{color:var(--orange);}
+.ksub{font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:500;}
+.kdelta{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;
+}
+.kdelta.up{background:var(--lime-dim);color:var(--lime);}
+.kdelta.neu{background:rgba(138,145,184,.08);color:var(--text3);}
+.kdelta.warn{background:var(--amber-dim);color:var(--amber);}
+
+/* ══════════════════════════════════════════════════
+   SUPERVISOR CARDS
+   ══════════════════════════════════════════════════ */
+.supgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:14px;}
+@media(max-width:1400px){.supgrid{grid-template-columns:repeat(3,1fr);}}
+.scard{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:16px;
+  position:relative;overflow:hidden;cursor:pointer;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s,border-color .2s;
+  animation:fadeUp .5s ease both;user-select:none;
+}
+.scard:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.5);}
+.scard.selected{box-shadow:0 0 0 2px var(--sup-color,var(--lime)),0 8px 32px rgba(0,0,0,.5);}
+.scard::after{
+  content:'Clique para filtrar';
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(transparent,rgba(0,0,0,.4));
+  color:rgba(255,255,255,.25);font-size:8px;letter-spacing:.5px;
+  text-align:center;padding:8px 4px 5px;
+  opacity:0;transition:opacity .2s;
+  font-family:'DM Sans',sans-serif;text-transform:uppercase;
+}
+.scard:hover::after{opacity:1;}
+.scard.selected::after{content:'✓ Filtro ativo';opacity:1;color:var(--sup-color,var(--lime));background:transparent;padding:4px;}
+.savatar{
+  width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-size:13px;font-weight:800;
+  margin-bottom:10px;border:2px solid;
+}
+.sname{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--text);margin-bottom:9px;line-height:1.3;}
+.sstats{display:flex;flex-direction:column;gap:5px;}
+.sstat{display:flex;justify-content:space-between;align-items:center;}
+.sslbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
+.ssval{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;}
+.sbarbg{width:100%;height:3px;background:rgba(255,255,255,.04);border-radius:2px;margin-top:9px;}
+.sbarfill{height:3px;border-radius:2px;transition:width .9s ease;}
+.smobtag{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:9px;font-weight:700;padding:2px 7px;
+  border-radius:5px;margin-top:7px;
+}
+
+/* ══════════════════════════════════════════════════
+   CLIENTE CARDS
+   ══════════════════════════════════════════════════ */
+.cligrid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-bottom:16px;}
+@media(max-width:1400px){.cligrid{grid-template-columns:repeat(4,1fr);}}
+.clicard{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px 16px;
+  position:relative;overflow:hidden;cursor:pointer;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s,border-color .2s;
+  animation:fadeUp .5s ease both;user-select:none;
+  display:flex;flex-direction:column;gap:5px;
+}
+.clicard:hover{transform:translateY(-3px);box-shadow:0 8px 26px rgba(0,0,0,.5);}
+.clicard.selected{border-color:var(--cli-color,var(--lime));box-shadow:0 0 0 2px var(--cli-color,var(--lime)),0 6px 24px rgba(0,0,0,.5);}
+.clicard::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  border-radius:var(--r) var(--r) 0 0;
+  background:var(--cli-color,var(--lime));opacity:.5;transition:opacity .2s;
+}
+.clicard.selected::before{opacity:1;}
+.cliname{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--text);line-height:1.2;}
+.clistats{display:flex;justify-content:space-between;align-items:flex-end;}
+.clistat-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;line-height:1;}
+.clistat-sub{font-size:9px;color:var(--text3);text-align:right;}
+.clibarbg{width:100%;height:2px;background:rgba(255,255,255,.04);border-radius:1px;}
+.clibarfill{height:2px;border-radius:1px;transition:width .9s ease;}
+
+/* ══════════════════════════════════════════════════
+   CHART CARDS
+   ══════════════════════════════════════════════════ */
+.g2{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.g22{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:1100px){.g2,.g3,.g22{grid-template-columns:1fr;}}
+.ccard{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:20px;
+  animation:fadeUp .6s ease both;
+  position:relative;overflow:hidden;
+}
+.ccard::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(169,219,33,0.15),transparent);
+}
+.ccard.mcard{padding:0;overflow:hidden;}
+.ch{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:10px;}
+.ch.in{padding:18px 18px 0;}
+.ctitle{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
+.csub{font-size:10px;color:var(--text3);margin-top:3px;line-height:1.5;}
+.cbadge{
+  font-size:9px;padding:3px 9px;border-radius:7px;
+  font-weight:700;letter-spacing:.4px;white-space:nowrap;text-transform:uppercase;flex-shrink:0;
+}
+.blime  {background:var(--lime-dim);color:var(--lime);}
+.bblue  {background:var(--blue-dim);color:var(--blue);}
+.bamber {background:var(--amber-dim);color:var(--amber);}
+.bslate {background:var(--slate-dim);color:#a098c8;}
+.bteal  {background:var(--teal-dim);color:var(--teal);}
+.bviolet{background:var(--violet-dim);color:var(--violet);}
+
+/* INSIGHT BOXES */
+.insight{
+  display:flex;align-items:flex-start;gap:9px;
+  margin-top:14px;padding:10px 13px;
+  background:rgba(169,219,33,0.05);
+  border:1px solid rgba(169,219,33,0.12);
+  border-radius:var(--rs);
+}
+.insight-icon{font-size:13px;flex-shrink:0;margin-top:1px;}
+.insight-text{font-size:10px;color:var(--text2);line-height:1.65;}
+.insight-text b{color:var(--lime);}
+.insight.amber{background:rgba(245,200,66,0.05);border-color:rgba(245,200,66,0.12);}
+.insight.amber .insight-text b{color:var(--amber);}
+.insight.blue{background:rgba(94,179,245,0.05);border-color:rgba(94,179,245,0.12);}
+.insight.blue .insight-text b{color:var(--blue);}
+.insight.orange{background:rgba(245,145,94,0.05);border-color:rgba(245,145,94,0.12);}
+.insight.orange .insight-text b{color:var(--orange);}
+
+/* ══════════════════════════════════════════════════
+   MAP
+   ══════════════════════════════════════════════════ */
+.map-filters{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 18px;
+  border-top:1px solid var(--border);
+  background:rgba(12,10,22,0.5);
+}
+.mflabel{font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;}
+.mfsel{
+  background:var(--card2);border:1px solid var(--borderw);
+  border-radius:var(--rs);color:var(--text2);
+  font-size:11px;padding:5px 9px;
+  font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;
+  min-width:128px;transition:border-color .2s,color .2s;
+}
+.mfsel:focus,.mfsel.active{border-color:rgba(169,219,33,0.4);color:var(--lime);}
+.mfbtn{
+  padding:5px 11px;background:transparent;
+  border:1px solid var(--borderw);border-radius:var(--rs);
+  color:var(--text3);font-size:10px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .18s;font-weight:600;
+}
+.mfbtn:hover{background:var(--red-dim);border-color:rgba(245,101,101,0.3);color:var(--red);}
+.mfcount{font-size:10px;color:var(--text3);font-style:italic;}
+#map{height:400px;width:100%;background:#080615;}
+.leaflet-container{background:#080615;}
+
+/* PROGRESS BARS */
+.plist{display:flex;flex-direction:column;gap:9px;margin-top:4px;}
+.pitem{display:flex;flex-direction:column;gap:3px;}
+.phdr{display:flex;justify-content:space-between;align-items:center;}
+.pname{font-size:10px;color:var(--text2);font-weight:500;}
+.pval{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;}
+.pbg{width:100%;height:4px;background:rgba(255,255,255,.04);border-radius:2px;}
+.pfill{height:4px;border-radius:2px;transition:width 1s ease;}
+
+/* ══════════════════════════════════════════════════
+   TABLE
+   ══════════════════════════════════════════════════ */
+.tcard{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;margin-bottom:24px;
+  position:relative;
+}
+.tcard::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(169,219,33,0.2),transparent);
+}
+.ttoolbar{
+  padding:14px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap;
+  background:rgba(25,21,40,0.6);
+}
+.sbox{
+  display:flex;align-items:center;gap:7px;
+  background:rgba(12,10,22,0.5);
+  border:1px solid var(--borderw);border-radius:var(--rs);
+  padding:6px 11px;flex:1;max-width:310px;
+}
+.sbox input{
+  background:none;border:none;outline:none;
+  color:var(--text);font-size:12px;
+  font-family:'DM Sans',sans-serif;width:100%;
+}
+.sbox input::placeholder{color:var(--text4);}
+.tsel{
+  background:var(--card2);border:1px solid var(--borderw);
+  border-radius:var(--rs);color:var(--text2);
+  font-size:11px;padding:5px 8px;
+  font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;
+}
+table{width:100%;border-collapse:collapse;}
+thead th{
+  padding:9px 12px;font-size:9px;font-weight:700;
+  letter-spacing:1.1px;text-transform:uppercase;
+  color:var(--lime);
+  background:rgba(169,219,33,0.05);
+  border-bottom:1px solid rgba(169,219,33,0.12);
+  text-align:left;white-space:nowrap;
+  position:sticky;top:0;z-index:5;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:hover{background:rgba(169,219,33,0.03);}
+td{padding:9px 12px;font-size:11px;color:var(--text2);white-space:nowrap;}
+td.nm{color:var(--text);font-weight:500;max-width:155px;overflow:hidden;text-overflow:ellipsis;}
+.stag{
+  display:inline-block;padding:2px 8px;border-radius:5px;
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+}
+.s-op{background:rgba(169,219,33,0.12);color:var(--lime);}
+.s-mob{background:var(--amber-dim);color:var(--amber);}
+.tscroll{overflow-x:auto;max-height:460px;overflow-y:auto;overflow-anchor:none;}
+.tscroll::-webkit-scrollbar{width:3px;height:3px;}
+.tscroll::-webkit-scrollbar-thumb{background:rgba(169,219,33,0.2);border-radius:2px;}
+.tfoot{
+  padding:9px 18px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:10px;color:var(--text3);
+  background:rgba(25,21,40,0.4);
+}
+.mbadge{
+  font-size:10px;font-weight:700;
+  color:var(--lime);background:var(--lime-dim);
+  padding:1px 7px;border-radius:4px;
+}
+
+/* EXPORT BUTTONS */
+.export-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:var(--rs);
+  font-size:10px;font-weight:700;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  border:1px solid;transition:all .18s;letter-spacing:.3px;
+}
+.export-btn.xlsx{
+  background:rgba(169,219,33,0.08);
+  border-color:rgba(169,219,33,0.25);color:var(--lime);
+}
+.export-btn.xlsx:hover{background:rgba(169,219,33,0.16);}
+.export-btn.pdf{
+  background:var(--blue-dim);
+  border-color:rgba(94,179,245,0.25);color:var(--blue);
+}
+.export-btn.pdf:hover{background:rgba(94,179,245,0.18);}
+.update-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:var(--rs);
+  font-size:10px;font-weight:700;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  background:var(--slate-dim);
+  border:1px solid rgba(80,76,99,0.4);color:#a098c8;
+  transition:all .18s;letter-spacing:.3px;
+}
+.update-btn:hover{background:rgba(80,76,99,0.4);}
+
+/* ══════════════════════════════════════════════════
+   UPDATE MODAL
+   ══════════════════════════════════════════════════ */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(12,10,22,0.85);
+  align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex;}
+.modal-box{
+  background:var(--card);
+  border:1px solid rgba(169,219,33,0.18);
+  border-radius:20px;
+  padding:36px;width:100%;max-width:480px;
+  box-shadow:0 24px 60px rgba(0,0,0,.8);
+  position:relative;overflow:hidden;
+}
+.modal-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--lime),transparent);
+}
+.modal-title{
+  font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+  color:var(--text);margin-bottom:6px;
+}
+.modal-sub{font-size:11px;color:var(--text3);margin-bottom:24px;}
+.dropzone{
+  border:2px dashed rgba(169,219,33,0.25);
+  border-radius:var(--r);padding:36px 24px;
+  text-align:center;cursor:pointer;
+  transition:all .2s;background:rgba(169,219,33,0.03);
+  position:relative;
+}
+.dropzone:hover,.dropzone.drag{
+  border-color:rgba(169,219,33,0.5);
+  background:rgba(169,219,33,0.07);
+}
+.dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.dz-icon{font-size:36px;margin-bottom:12px;}
+.dz-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.dz-sub{font-size:11px;color:var(--text3);}
+.dz-file{font-size:11px;color:var(--lime);margin-top:8px;font-weight:600;}
+.modal-progress{display:none;margin-top:20px;}
+.modal-progress.show{display:block;}
+.prog-bar-bg{width:100%;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.prog-bar-fill{height:6px;background:linear-gradient(90deg,#a9db21,#c8f040);border-radius:3px;width:0%;transition:width .4s ease;}
+.prog-text{font-size:11px;color:var(--text3);}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+.btn-cancel{
+  padding:8px 18px;background:transparent;
+  border:1px solid var(--borderw);border-radius:var(--rs);
+  color:var(--text2);font-size:12px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .18s;
+}
+.btn-cancel:hover{background:rgba(255,255,255,.05);}
+.btn-confirm{
+  padding:8px 20px;
+  background:linear-gradient(135deg,var(--lime),#8fba15);
+  border:none;border-radius:var(--rs);
+  color:#0c0a16;font-family:'Syne',sans-serif;
+  font-size:12px;font-weight:800;cursor:pointer;
+  transition:all .2s;
+}
+.btn-confirm:hover{opacity:.9;}
+
+/* ══════════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════════ */
+footer{
+  text-align:center;padding:20px 28px;
+  font-size:10px;color:var(--text4);
+  border-top:1px solid var(--border);
+  position:relative;z-index:1;letter-spacing:.4px;
+}
+footer::before{
+  content:'';display:block;
+  width:200px;height:1px;margin:0 auto 16px;
+  background:linear-gradient(90deg,transparent,rgba(169,219,33,0.3),transparent);
+}
+
+/* ══════════════════════════════════════════════════
+   ANIMATIONS
+   ══════════════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.kcard:nth-child(1){animation-delay:.04s;}
+.kcard:nth-child(2){animation-delay:.08s;}
+.kcard:nth-child(3){animation-delay:.12s;}
+.kcard:nth-child(4){animation-delay:.16s;}
+.kcard:nth-child(5){animation-delay:.20s;}
+
+/* Scrollbars */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:rgba(169,219,33,0.2);border-radius:2px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(169,219,33,0.4);}
+
+/* ── SYNC BUTTON ── */
+.hsync-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 13px;
+  background:rgba(169,219,33,0.08);
+  border:1px solid rgba(169,219,33,0.22);
+  border-radius:20px;
+  color:var(--lime);font-size:11px;font-weight:700;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:all .2s;letter-spacing:.2px;
+}
+.hsync-btn:hover{background:rgba(169,219,33,0.18);}
+.hsync-btn:disabled{opacity:.4;cursor:not-allowed;}
+.hsync-btn.syncing svg{animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.hbadge.error{background:rgba(245,101,101,0.1);border-color:rgba(245,101,101,0.2);color:var(--red);}
+.hbadge.error .hdot{background:var(--red);box-shadow:0 0 6px var(--red);}
+.hbadge.syncing{background:rgba(94,179,245,0.1);border-color:rgba(94,179,245,0.2);color:var(--blue);}
+.hbadge.syncing .hdot{background:var(--blue);box-shadow:0 0 6px var(--blue);}
+.sp-info-box{
+  display:none;
+  background:var(--card2);border:1px solid var(--border2);
+  border-radius:var(--r);padding:20px;margin-bottom:16px;
+  font-size:12px;color:var(--text2);
+  animation:fadeUp .4s ease;
+}
+.sp-info-box.show{display:block;}
+.sp-info-box .sp-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.sp-steps{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.sp-step{display:flex;align-items:flex-start;gap:10px;}
+.sp-num{width:20px;height:20px;border-radius:50%;background:var(--lime-dim);color:var(--lime);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.sp-text{font-size:11px;color:var(--text2);line-height:1.5;}
+.sp-text b{color:var(--lime);}
+.sp-input-row{display:flex;gap:8px;margin-top:14px;}
+.sp-url-input{
+  flex:1;background:rgba(12,10,22,0.5);
+  border:1px solid var(--borderw);border-radius:var(--rs);
+  padding:8px 12px;color:var(--text);font-size:12px;
+  font-family:'DM Sans',sans-serif;outline:none;
+}
+.sp-url-input:focus{border-color:rgba(169,219,33,0.4);}
+.sp-save-btn{
+  padding:8px 16px;background:linear-gradient(135deg,var(--lime),#8fba15);
+  border:none;border-radius:var(--rs);
+  color:#0c0a16;font-family:'Syne',sans-serif;
+  font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;
+}
+</style>
+</head>
+<body>
+
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<header>
+  <div class="hlogo">
+    <img class="hlogo-sym" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAIv0lEQVR42u2be4xcdRXHP+d3X3PnsTu7tN26lG5tLa8tYqpQKZpgAqgFbMIfEk1UgqH+BSESH0hC0JBIAv4lKiqKIVH/NNSGxEDUCJY2wSI0QEsLLfQJpfuYnceduff+jn/c2e3SsC2S7PR1T3IzO5vdzL2fnN95fM8ZuWDoMrXWkttHM9daSw7wo5vJEeQAc4A5wBxgbjnAHGAOMAeYWw4wB5gDzAHmlgPMAeYAc4C55QBzgDnAHGBuJzP3tLobASPZ64zprPcKVru/ywHO4mZABNIYWm0lTTJCxmTktAvNuIIfgOMJqoracxygSAav3VTijtK/wLDico/hlR4Lhg1hxUERokbK2KGUA7sS9r+eMPFOguMbCkVBbRfwuQbQGEgTiGqWCy5xWbs+ZNXVBQaGBd8XQGfAiPgAJLFl/DC88nybzRub7NmeUCgYXB9seoqc4PyFoz1f7TAORA0lrAjrNpRZu96nWHHodD3RWlDVY7FOBAHEAc8XglDoNIUtTzXZ9Gid2lElLMspgdhzgMaBZs2ydNTl1h9XWXKRoTFpSZPM6xxH8ALB8TIvhSzeJTHEM/FRcFwo9RkO70154v5Jdv0nodTfe4g9BZjBUy660mPDw/0UikKrrojJYIUVIW4ph96yvLs3ZWo8BRVKVWFomWHxMo9CKDQbFptksa9QFNIYHru3xsv/aPccYs8AGgNRU1lyscudv6ziF5Q4yrJsUBRsDFufarFlU8SB3SntupJaQDLAhaIwvNzjinUha28M8MIsDCDgepmn/uKOCXZtSwjLvYuJPQEokj2Q68Pdjw0w9HEne3ig2Cfs25Hypwcn2f1ijO85+IXu8Z1d/1mIIyXuwLJRl1t+WGH55T7NWgoCQUEYfzfl4dvGadXAcXuTnZ2+0qL7dZ4/yTjQnFLW31Hi09cG1CcVEShWhB1bOzxy1yRH37ZU+h0cLwOmx10Ari8UisLYYeWFv0UsXmG44GKPOFKSWDlvyCUsuWx7JsIPpScA572VE4F2Sxle6bL2K0Vq4xa1SlAUDr6R8NsfTWI7UK4alAysmeOu1GalT6GU/fz4PTXefDEmKBpUhdp4ymeu91l2mUvUyI7+mQ/QQNJWrvtmkUVLDWHJUF3kYGP49fdrHD2kxJEy+Z6lPqHUx5VWIwM5l02HgySGP/+0hqZKdYGh2GcYHDZ86dYSNlXkbImBqspnbypSGRDSFDRVBocd6hNpt0zJwp1qBmbPSwnbn2vjByc+hsZA1LKsvrbA8AqXJALjKdEUbN4YYVNlvin2LAu3GhabKsYInXbK3b9fxBVfdGlO2WM9L9M9sfCz28bYsz0h6LZrc4cIIWpY4kRxBCyZIBGWeyM09ayVK/U5GJMVw0svcVlxmeHIftvtNnTW8VTKAw7XfavMo98dR0RO4kVZR1MUc0y60W4JpGcJQGshTRXHZNl4wbBDsQ+a9Q9KGEKnZfnUNT6rPhfw0j/bFCsGa092GnXmddqTjTkLAE53C67Xla0c6FtgaNaUZk0QZ45sGyufv7nI2ztiXEf+r88TgSRR2k1OmIxOe4DTrdvNd5W48ssF6uNKecCwZVOTe9eNEfYJ1upc2ipJDF+9u49L1/q06vqhPMpaKFYMLzwd8ccHJimWM+89Yz3QWkWtUh40WLWUqkLfoMPUhJKmOufDGQOtuvLsX5qsvt7HeB/Om2wK5YEs89uUec/CPUlVRw5YbKxoqrSbyqJlLuWqIEZw3Q++jBHKVcPOrW22PdMmKJhMeG1z3KWkMdgkK7LTJFO2j+zvTTM8vwAVHEc4sMuSxNmRjjvK0IjL8AqHTkunk+acl/EMTz8RYROhusihPGCozLr6znNwfXlf4kgT5eDuBOPIvGfieT3CVsErCAde7zB2MKU6ZGhHEPTBmhuKvL5tktBIVnLM0boFobB/Z4dffW+cC1f7JJ1jR9mYrE1cfV3A0IhLp53i+cLYO5Z9OxKCQLBnMkA0k5om31Ne2Zzwha8HdCJLs25Zs85n85Meb72anFBNVgt+QXjl2Q4v/73dbVmyAVPUspy/wuGaW4qkqUVtpla/tjli4oil3ANtcN5joFrwfHhuY5OokT24TcANhK/d04dfzGKZcU5cmoQloTxgKFcNfQscCqFQXWjY8NAAlcFMVHVciJqw+ckIzztL1BjVTDB9+9WYzRsjSv0GVYgalqWjHrc/WMV1lVZdcVzmVFCsna7xhOakRVG+/UCVkUscmlMW1Uzi37qpnQ2bTtICnlF6IIDjCnu2x6y62qd/oSHtzjiWrHS5eE3Avp0dDu9NUZv9rTHdwrs7M1aFTqS06paRUZfbH6xy4RqPZs0CQqEkHNlnefy+SVCZ9wL61Ej6DWVklcedj1RxfCVu68zDx21l66Y2W55qcuiNlFZDIT0miQUlw/BylytvCLjqxhC/ILQadkZoVQs/v2OcN/6bUOzhhK7nQ6VGLeXSqwK+89AAXiHzKDFZ3RdWhE5TObw34Z23UqbGsvuqDBiGlrksHnHwyxBNaSaLWSiUhCSG3/1ggu3/alPsd87OodIxiEK9lvCJTwZ84ycVzl/u0qjZmXGlcbKs67ogs1Y7kli7Y83pkDA91rT84b5x3nwxJqy6aNLbNYVTNFgXWvWUUlW4cUOZq24KKZSFdsuSdKbbv+N1v+z/XB+C0BA1la1/jdj4mzqNsXNosD77OCedTFEeGXW5en3I6NqAwcVmprOYtdvRFReUsUOW155v8++NLfZuTwlCOfdWO2Z7lRih3bTEHaW60GHJRR5LVjoMfswQlg1KVvIcPWg5sDth/86UyXcTXF9m1OpTuVx0SgHO3ES3VJm9viHdKlUQ1CoWwXUEv5CtfeTrbcd1K9o91mGpu/P2PhVAZlpDOy1TnSZ2em2oTm+gnk4rqKeDHng2Ww4wB5gDzAHmAHPLAeYAc4A5wNxygDnAHGAOMLccYA4wB5gDzC0HmAPMAZ4L5opI9m2g3D6S/Q+UIkqKA9aJ2QAAAABJRU5ErkJggg==" alt="Grid Co.">
+    <div class="hlogo-right">
+      <img class="hlogo-wordmark" src="data:image/png;base64,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" alt="Grid Co.">
+      <div class="hlogo-sub">Operação &amp; Manutenção — Dashboard Solar</div>
+    </div>
+  </div>
+  <div class="hright">
+    <div class="hbadge" id="syncBadge"><div class="hdot" id="syncDot"></div><span id="syncLabel">Dados Atualizados</span></div>
+    <button class="hsync-btn" id="btnRefresh" onclick="syncSharePoint()" title="Buscar dados atualizados do SharePoint">
+      <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Sincronizar
+    </button>
+    <span class="hdate" id="currentDate"></span>
+  </div>
+</header>
+
+<!-- ══════════════════ FILTER BANNER ══════════════════ -->
+<div class="filter-active-banner" id="fabanner">
+  <span id="fatext">Filtrando</span>
+  <button class="fab-close" onclick="clearAllFilters()">&#10005; Limpar filtros</button>
+</div>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<main>
+
+<!-- SYNC STATUS BOX -->
+<div class="sp-info-box" id="spInfoBox">
+  <div class="sp-title">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    Status da Sincronização
+  </div>
+  <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Fonte de dados: <b style="color:var(--lime)">GitHub Gist</b> &nbsp;·&nbsp; Intervalo: <b style="color:var(--lime)">5 minutos</b></div>
+  <div style="font-size:10px;color:var(--text3);word-break:break-all;margin-bottom:10px;">https://gist.githubusercontent.com/fillipefigueiro-source/bb3f9a7046fbbbae3d040b3900e934fa/raw/data.json</div>
+  <div id="spUrlStatus" style="font-size:11px;color:var(--text3);"></div>
+  <button class="sp-save-btn" style="margin-top:12px;padding:7px 16px;font-size:11px;" onclick="syncSharePoint();document.getElementById('spInfoBox').classList.remove('show')">&#8635; Tentar novamente</button>
+</div>
+
+<!-- KPIs -->
+<div class="sec"><span class="sec-dot"></span>Indicadores Estratégicos</div>
+<div class="kgrid">
+  <div class="kcard lime"><div class="kglow"></div><div class="kicon">&#127981;</div><div class="klbl">Usinas em Operação</div><div class="kval" id="k-usinas">86</div><div class="ksub" id="k-usinas-mwp">333,9 MWp instalados</div><span class="kdelta up">&#9650; Portfólio ativo</span></div>
+  <div class="kcard blue"><div class="kglow"></div><div class="kicon">&#9889;</div><div class="klbl">Potência em Operação</div><div class="kval" id="k-mwp" style="font-size:26px">333,9</div><div class="ksub">MWp instalados</div><span class="kdelta up">&#9650; Média 3,88 MWp/usina</span></div>
+  <div class="kcard amber"><div class="kglow"></div><div class="kicon">&#128101;</div><div class="klbl">Equipes &amp; Clusters</div><div class="kval" id="k-equipes">45</div><div class="ksub" id="k-clusters-sub">em 31 clusters ativos</div><span class="kdelta up">&#9650; Cobertura nacional</span></div>
+  <div class="kcard slate"><div class="kglow"></div><div class="kicon">&#128506;</div><div class="klbl">Estados de Atuação</div><div class="kval" id="k-estados">16</div><div class="ksub">UFs com operação ativa</div><span class="kdelta neu">&#8594; 5 regiões do Brasil</span></div>
+  <div class="kcard orange"><div class="kglow"></div><div class="kicon">&#9203;</div><div class="klbl">Usinas a Mobilizar</div><div class="kval" id="k-amob">60</div><div class="ksub" id="k-amob-mwp">217,0 MWp pendentes</div><span class="kdelta warn">&#9888; Pipeline ativo</span></div>
+</div>
+
+<!-- SUPERVISORS -->
+<div class="sec"><span class="sec-dot"></span>Supervisores — Clique para Filtrar</div>
+<div class="supgrid" id="supGrid"></div>
+
+<!-- CLIENTES -->
+<div class="sec"><span class="sec-dot"></span>Clientes — Clique para Filtrar</div>
+<div class="cligrid" id="cliGrid"></div>
+
+<!-- ROW 1 -->
+<div class="sec"><span class="sec-dot"></span>Evolução &amp; Composição</div>
+<div class="g2">
+  <div class="ccard">
+    <div class="ch"><div><div class="ctitle">Evolução Acumulada de Mobilizações</div><div class="csub">Crescimento de usinas e potência desde Dez/24</div></div><span class="cbadge blime">Histórico</span></div>
+    <div style="position:relative;height:220px"><canvas id="cEvol"></canvas></div>
+    <div class="insight"><span class="insight-icon">&#128200;</span><div class="insight-text">Em <b>Out/25</b> foram mobilizadas <b>29 usinas em um único mês</b> — 33,7% de todo o portfólio atual. Ritmo médio antes: 2,6 usinas/mês.</div></div>
+  </div>
+  <div class="ccard">
+    <div class="ch"><div><div class="ctitle">Portfólio por Cliente</div><div class="csub">Concentração e mix de clientes ativos</div></div><span class="cbadge bblue">Mix</span></div>
+    <div style="position:relative;height:220px"><canvas id="cClientes"></canvas></div>
+    <div class="insight amber"><span class="insight-icon">&#9888;</span><div class="insight-text"><b>Thopen representa 60,5%</b> do portfólio. Alta concentração — diversificação reduz risco operacional.</div></div>
+  </div>
+</div>
+
+<!-- ROW 2 -->
+<div class="g3">
+  <div class="ccard">
+    <div class="ch"><div><div class="ctitle">Operação vs Pipeline por Estado</div><div class="csub">Comparativo entre usinas operando e a mobilizar</div></div><span class="cbadge bamber">UFs</span></div>
+    <div style="position:relative;height:200px"><canvas id="cUFs"></canvas></div>
+    <div class="insight blue"><span class="insight-icon">&#128204;</span><div class="insight-text"><b>SP</b> domina com 24 usinas em operação. <b>CE e BA</b> têm pipeline relevante — expansão Nordeste em curso.</div></div>
+  </div>
+  <div class="ccard">
+    <div class="ch"><div><div class="ctitle">Operação vs Pipeline por Região</div><div class="csub">Onde está o crescimento futuro do portfólio</div></div><span class="cbadge bslate">Regiões</span></div>
+    <div style="position:relative;height:200px"><canvas id="cRegioes"></canvas></div>
+    <div class="insight orange"><span class="insight-icon">&#127775;</span><div class="insight-text">Nordeste tem <b>+24 usinas a mobilizar</b> vs 24 em operação — potencial de <b>dobrar</b> a presença regional.</div></div>
+  </div>
+  <div class="ccard">
+    <div class="ch"><div><div class="ctitle">Faixa de Potência</div><div class="csub">Perfil técnico do portfólio ativo e pipeline</div></div><span class="cbadge bteal">Técnico</span></div>
+    <div style="position:relative;height:200px"><canvas id="cFaixa"></canvas></div>
+    <div class="insight"><span class="insight-icon">&#9889;</span><div class="insight-text"><b>43% das usinas</b> estão na faixa 3–5 MWp. Usinas acima de 5 MWp representam <b>28%</b> das unidades.</div></div>
+  </div>
+</div>
+
+<!-- ROW 3 -->
+<div class="g22">
+  <div class="ccard mcard">
+    <div class="ch in"><div><div class="ctitle">Localização das Usinas</div><div class="csub" style="margin-bottom:8px">&#9679; Em Operação &nbsp; &#9675; A Mobilizar — filtrar por Cluster, Equipe ou Supervisor</div></div><span class="cbadge blime">Mapa</span></div>
+    <div class="map-filters">
+      <span class="mflabel">Filtrar:</span>
+      <select class="mfsel" id="mfCluster" onchange="applyMapFilter()"><option value="">Todos os Clusters</option></select>
+      <select class="mfsel" id="mfEquipe"  onchange="applyMapFilter()"><option value="">Todas as Equipes</option></select>
+      <select class="mfsel" id="mfSup"     onchange="applyMapFilter()"><option value="">Todos Supervisores</option></select>
+      <button class="mfbtn" onclick="resetMapFilter()">&#10005; Limpar</button>
+      <span class="mfcount" id="mapCount"></span>
+    </div>
+    <div id="map"></div>
+  </div>
+  <div class="ccard">
+    <div class="ch"><div><div class="ctitle">Pipeline por Supervisor</div><div class="csub">Usinas a mobilizar e MWp pendente</div></div><span class="cbadge bamber">Pipeline</span></div>
+    <div style="position:relative;height:170px"><canvas id="cPipeline"></canvas></div>
+    <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--border)">
+      <div style="font-size:9px;color:var(--text3);margin-bottom:9px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;">MWp Pendente por Supervisor</div>
+      <div class="plist" id="pipelineList"></div>
+    </div>
+    <div class="insight amber" style="margin-top:14px"><span class="insight-icon">&#9888;</span><div class="insight-text"><b>Camila Viana</b> tem a maior fila: 14 usinas a mobilizar (36,3 MWp) com apenas 8 em operação.</div></div>
+  </div>
+</div>
+
+<!-- ROW 4 -->
+<div class="g3">
+  <div class="ccard">
+    <div class="ch"><div><div class="ctitle">Mobilizações por Mês</div><div class="csub">Volume de novas entradas mensais</div></div><span class="cbadge blime">Mensal</span></div>
+    <div style="position:relative;height:190px"><canvas id="cMensal"></canvas></div>
+    <div class="insight"><span class="insight-icon">&#128197;</span><div class="insight-text">Após pico de Out/25, ritmo manteve consistência em Dez/25 (+20). Abr/26 com +4 sugere desaceleração no curto prazo.</div></div>
+  </div>
+  <div class="ccard">
+    <div class="ch"><div><div class="ctitle">MWp Gerenciado vs Pipeline</div><div class="csub">Potência atual e futura por supervisor</div></div><span class="cbadge bamber">Carga</span></div>
+    <div style="position:relative;height:190px"><canvas id="cMwpSup"></canvas></div>
+    <div class="insight blue"><span class="insight-icon">&#9878;</span><div class="insight-text"><b>Pedro Candido</b> lidera em operação (86,3 MWp). Com pipeline, <b>Kevin Amorim</b> terá crescimento de +27,7 MWp.</div></div>
+  </div>
+  <div class="ccard">
+    <div class="ch"><div><div class="ctitle">Top Equipes — MWp em Operação</div><div class="csub">Potência gerenciada por cluster</div></div><span class="cbadge bslate">Clusters</span></div>
+    <div style="position:relative;height:190px"><canvas id="cEquipes"></canvas></div>
+    <div class="insight"><span class="insight-icon">&#127942;</span><div class="insight-text"><b>PA Leste 01</b> é o cluster mais potente — 19,4 MWp. Alta dependência de equipe única no Pará.</div></div>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="sec"><span class="sec-dot"></span>Portfólio Detalhado — Equipe Operacional</div>
+<div class="tcard">
+  <div class="ttoolbar">
+    <div><div class="ctitle">Usinas em Operação e A Mobilizar</div><div class="csub">Supervisor, técnico, eletricista, mantenedor e localização</div></div>
+    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+      <div class="sbox">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="tsearch" placeholder="Buscar usina, equipe, técnico..." oninput="filterTable()">
+      </div>
+      <select class="tsel" id="tstatus" onchange="filterTable()"><option value="">Todos Status</option><option value="OPERAÇÃO">Em Operação</option><option value="A MOBILIZAR">A Mobilizar</option></select>
+      <select class="tsel" id="ttsup" onchange="filterTable()"><option value="">Todos Supervisores</option></select>
+      <select class="tsel" id="ttcliente" onchange="filterTable()"><option value="">Todos Clientes</option></select>
+      <select class="tsel" id="ttcluster" onchange="filterTable()"><option value="">Todos Clusters</option></select>
+      <select class="tsel" id="ttuf" onchange="filterTable()"><option value="">Todos Estados</option></select>
+      <span style="font-size:10px;color:var(--text3)" id="tcount"></span>
+    </div>
+  </div>
+  <div class="tscroll">
+    <table><thead><tr>
+      <th>Usina</th><th>Status</th><th>Cliente</th><th>Supervisor O&amp;M</th><th>Técnico O&amp;M</th>
+      <th>Eletricista O&amp;M</th><th>Mantenedor O&amp;M</th>
+      <th>Equipe Cluster</th><th>Cluster</th><th>MWp</th>
+      <th>Faixa</th><th>Tipologia</th><th>Estado</th><th>Cidade</th><th>Mobilização</th>
+    </tr></thead><tbody id="tbody"></tbody></table>
+  </div>
+  <div class="tfoot">
+    <span id="tfootcount"></span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <button class="export-btn xlsx" onclick="exportXLSX()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exportar Excel
+      </button>
+      <button class="export-btn pdf" onclick="exportPDF()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exportar PDF
+      </button>
+      <button class="update-btn" onclick="openModal()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Atualizar Dados
+      </button>
+    </div>
+  </div>
+</div>
+</main>
+
+<!-- ══════════════════ UPDATE MODAL ══════════════════ -->
+<div class="modal-overlay" id="updateModal">
+  <div class="modal-box">
+    <div class="modal-title">Atualizar Base de Dados</div>
+    <div class="modal-sub">Selecione o arquivo .xlsx com a aba "Operações"</div>
+    <div class="dropzone" id="dropzone"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])">
+      <div class="dz-icon">&#128196;</div>
+      <div class="dz-title">Arraste o arquivo ou clique para selecionar</div>
+      <div class="dz-sub">Suporte: .xlsx &nbsp;&middot;&nbsp; Aba "Operações"</div>
+      <div class="dz-file" id="dzFile"></div>
+    </div>
+    <div class="modal-progress" id="modalProgress">
+      <div class="prog-bar-bg"><div class="prog-bar-fill" id="progBar"></div></div>
+      <div class="prog-text" id="progText">Processando...</div>
+    </div>
+    <div id="modalStatus" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" id="modalBtn" onclick="processFile()" disabled>Carregar Dados</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <img src="data:image/png;base64,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" alt="Grid Co." style="height:16px;opacity:.4;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;">
+  Grid Co. &copy; 2026 &nbsp;&mdash;&nbsp; Dashboard de Operação &amp; Manutenção de Usinas Fotovoltaicas &nbsp;&mdash;&nbsp; Gerado em <span id="footerDate"></span>
+</footer>
+
+<script>
+
+const ALL  = [{"nome":"Ceará Mirim I 2","status":"A MOBILIZAR","cliente":"Thopen","uf":"RN","cidade":"Ceará Mirim","mwp":1.4,"supervisor":"Kevin Amorim","tecnico":"Cleilton Junior","eletricista":"","mantenedor":"Valderio Paz","equipe":"RN Leste 01","cluster":"RN Leste","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Água Boa","status":"A MOBILIZAR","cliente":"Thopen","uf":"MT","cidade":"Água Boa","mwp":6.7,"supervisor":"Fred Alexandrino","tecnico":"Damião Martins","eletricista":"","mantenedor":"Gabriel Oliveira","equipe":"MT Leste 01","cluster":"MT Leste","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-14.043766,"lng":-52.202021},{"nome":"Altair","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Altair","mwp":6.898,"supervisor":"Camila Viana","tecnico":"","eletricista":"Anderson Parente","mantenedor":"","equipe":"SP Norte 02","cluster":"SP Norte","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Sudeste","mob":"2025-11-20","lat":-20.526285,"lng":-49.054195},{"nome":"Alto Paraná 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"PR","cidade":"Alto Paraná","mwp":3.26,"supervisor":"Pedro Candido","tecnico":"Marcos Camargo","eletricista":"Douglas Silva","mantenedor":"","equipe":"PR Norte 01","cluster":"","faixa":"3MWp | 5MWp","tipologia":"","regiao":"","mob":null,"lat":null,"lng":null},{"nome":"Alto Paraná 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"PR","cidade":"Alto Paraná","mwp":2.6,"supervisor":"Pedro Candido","tecnico":"Marcos Camargo","eletricista":"Douglas Silva","mantenedor":"","equipe":"PR Norte 01","cluster":"","faixa":"1MWp | 3MWp","tipologia":"","regiao":"","mob":"2026-04-18","lat":null,"lng":null},{"nome":"Alvorada do Anhembi","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"Porto Feliz","mwp":3.2,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"SP 03","faixa":"","tipologia":"SOLO FIXA","regiao":"","mob":null,"lat":-23.111725,"lng":-47.534264},{"nome":"Anápolis","status":"A MOBILIZAR","cliente":"Thopen","uf":"GO","cidade":"Anápolis","mwp":3.4,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"GO 04","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-16.19126,"lng":-49.062055},{"nome":"Andradina","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"Andradina","mwp":3.4,"supervisor":"Pedro Candido","tecnico":"Carlos Godoi","eletricista":"","mantenedor":"João Salles","equipe":"SP Oeste 01","cluster":"SP Oeste","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":"2026-01-15","lat":-20.878503,"lng":-51.34113},{"nome":"Aparecida 3","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Aparecida","mwp":3.3,"supervisor":"Danuth Fernandes","tecnico":"Henri Almeida","eletricista":"","mantenedor":"Douglas Chagas","equipe":"SP Leste 01","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-10-20","lat":-22.858389,"lng":-45.270611},{"nome":"Aparecida do Taboado 1 e 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"MS","cidade":"Aparecida do Taboado","mwp":2.4,"supervisor":"Camila Viana","tecnico":"João Neves","eletricista":"Paulo Ribeiro","mantenedor":"","equipe":"MS Leste 01","cluster":"MS Leste","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Centro Oeste","mob":"2025-10-20","lat":-19.916083,"lng":-51.138667},{"nome":"Araci 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"BA","cidade":"Araci","mwp":3.46,"supervisor":"Vitor Valadares","tecnico":"","eletricista":"Walter Santos","mantenedor":"Tarcísio Lima","equipe":"BA Norte 01","cluster":"BA Norte","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Araçoiaba da Serra 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Araçoiaba da Serra","mwp":3.36,"supervisor":"Danuth Fernandes","tecnico":"Eduardo Mendes","eletricista":"Milton Ramos","mantenedor":"","equipe":"SP Leste 02","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":null,"lng":null},{"nome":"Araçoiaba da Serra 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Araçoiaba da Serra","mwp":3.07,"supervisor":"Danuth Fernandes","tecnico":"Eduardo Mendes","eletricista":"Milton Ramos","mantenedor":"","equipe":"SP Leste 02","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":null,"lng":null},{"nome":"Araputanga 1","status":"OPERAÇÃO","cliente":"2C","uf":"MT","cidade":"Araputanga","mwp":3.469,"supervisor":"Fred Alexandrino","tecnico":"Adriano Moraes","eletricista":"","mantenedor":"Aniel Rocha","equipe":"MT Sul 01","cluster":"MT Sul","faixa":"1MWp | 3MWp","tipologia":"SOLO TRACKER","regiao":"Centro Oeste","mob":"2025-11-17","lat":-15.479992,"lng":-58.3263},{"nome":"Assaí","status":"A MOBILIZAR","cliente":"Thopen","uf":"PR","cidade":"Assaí","mwp":3.3,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"PR 01","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-23.354699,"lng":-50.847386},{"nome":"Barretos 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Barretos","mwp":6.139,"supervisor":"Camila Viana","tecnico":"","eletricista":"Anderson Parente","mantenedor":"","equipe":"SP Norte 02","cluster":"SP Norte","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-11-20","lat":-20.532806,"lng":-48.547267},{"nome":"Belo Jardim","status":"OPERAÇÃO","cliente":"Thopen","uf":"PE","cidade":"Belo Jardim","mwp":2.7,"supervisor":"Vitor Valadares","tecnico":"Matheus Leite","eletricista":"","mantenedor":"Ygo Leite","equipe":"PE Leste 01","cluster":"PE Leste","faixa":"","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2026-02-19","lat":-8.366151,"lng":-36.457821},{"nome":"Bernardino de Campos","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"Bernardino de Campos","mwp":1.35,"supervisor":"Camila Viana","tecnico":"","eletricista":"","mantenedor":"","equipe":"SP Sul 01","cluster":"SP Sul","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Sudeste","mob":"2026-05-18","lat":null,"lng":null},{"nome":"Betânia 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"CE","cidade":"Betânia (Croatá)","mwp":3.25,"supervisor":"Camila Viana","tecnico":"","eletricista":"","mantenedor":"","equipe":"CE Oeste 01","cluster":"CE Oeste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Boa Esperança do Sul 1 e 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Boa Esperança do Sul","mwp":5.68,"supervisor":"Fred Alexandrino","tecnico":"Rodolfo Oliveira","eletricista":"","mantenedor":"Andrick Gouveia","equipe":"SP Centro 01","cluster":"SP Centro","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":null,"lng":null},{"nome":"Boa Viagem 1 e 2","status":"A MOBILIZAR","cliente":"Thopen","uf":"CE","cidade":"Boa Viagem","mwp":7.02,"supervisor":"Fred Alexandrino","tecnico":"","eletricista":"","mantenedor":"","equipe":"CE Centro 01","cluster":"CE Centro","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Bonfim Limoeiro do Norte","status":"OPERAÇÃO","cliente":"Thopen","uf":"CE","cidade":"Limoeiro do Norte","mwp":1.263,"supervisor":"Fred Alexandrino","tecnico":"Claudio Martins","eletricista":"","mantenedor":"Isake Costa","equipe":"CE Leste 01","cluster":"CE Leste","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":"2025-10-20","lat":null,"lng":null},{"nome":"Brodowski","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Brodowski","mwp":5.067,"supervisor":"Camila Viana","tecnico":"","eletricista":"Luís Moura","mantenedor":"","equipe":"SP Norte 03","cluster":"SP Norte","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Sudeste","mob":"2025-11-20","lat":null,"lng":null},{"nome":"Cambé","status":"A MOBILIZAR","cliente":"Thopen","uf":"PR","cidade":"Cambé","mwp":7.0,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"PR 01","faixa":"","tipologia":"SOLO FIXA","regiao":"","mob":null,"lat":-23.230857,"lng":-51.23887},{"nome":"Campezato","status":"A MOBILIZAR","cliente":"Thopen","uf":"PR","cidade":"Paranavaí","mwp":7.0,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"PR 02","faixa":"","tipologia":"SOLO FIXA","regiao":"","mob":null,"lat":-23.12267,"lng":-52.413875},{"nome":"Canarana 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"MT","cidade":"Canarana","mwp":1.94,"supervisor":"Fred Alexandrino","tecnico":"Damião Martins","eletricista":"","mantenedor":"Gabriel Oliveira","equipe":"MT Leste 01","cluster":"MT Leste","faixa":"","tipologia":"","regiao":"","mob":null,"lat":null,"lng":null},{"nome":"Canarana 2","status":"A MOBILIZAR","cliente":"Thopen","uf":"MT","cidade":"Canarana","mwp":3.11,"supervisor":"Fred Alexandrino","tecnico":"Damião Martins","eletricista":"","mantenedor":"Gabriel Oliveira","equipe":"MT Leste 01","cluster":"MT Leste","faixa":"","tipologia":"","regiao":"","mob":"2026-05-18","lat":null,"lng":null},{"nome":"Capitão Poço 100","status":"OPERAÇÃO","cliente":"Athon","uf":"PA","cidade":"Capitão Poço","mwp":4.9,"supervisor":"Pedro Candido","tecnico":"Gilson Souza","eletricista":"Manuel Silva","mantenedor":"","equipe":"PA Norte 01","cluster":"PA Norte","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":"2025-03-11","lat":null,"lng":-47.074518},{"nome":"Castelo do Piauí","status":"A MOBILIZAR","cliente":"GreenYellow","uf":"PI","cidade":"Castelo do Piauí","mwp":6.801,"supervisor":"Kevin Amorim","tecnico":"","eletricista":"","mantenedor":"","equipe":"PI Leste 01","cluster":"PI Leste","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Caxambu 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Jundiaí","mwp":2.07,"supervisor":"Danuth Fernandes","tecnico":"","eletricista":"","mantenedor":"","equipe":"SP Leste 03","cluster":"SP Leste","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":null,"lng":null},{"nome":"Ceará Mirim I 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"RN","cidade":"Ceará Mirim","mwp":1.4,"supervisor":"Kevin Amorim","tecnico":"Cleilton Junior","eletricista":"","mantenedor":"Valderio Paz","equipe":"RN Leste 01","cluster":"RN Leste","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Cedro 1","status":"OPERAÇÃO","cliente":"GreenYellow","uf":"CE","cidade":"Cedro","mwp":1.3,"supervisor":"Kevin Amorim","tecnico":"Leonardo Dias","eletricista":"","mantenedor":"Denilson Araújo","equipe":"CE Sul 01","cluster":"CE Sul","faixa":"1MWp | 3MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2025-12-19","lat":-6.630426,"lng":-39.104803},{"nome":"Cedro 2","status":"OPERAÇÃO","cliente":"GreenYellow","uf":"CE","cidade":"Cedro","mwp":1.3,"supervisor":"Kevin Amorim","tecnico":"Leonardo Dias","eletricista":"","mantenedor":"Denilson Araújo","equipe":"CE Sul 01","cluster":"CE Sul","faixa":"1MWp | 3MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2025-12-19","lat":-6.630426,"lng":-39.104803},{"nome":"Ceilândia 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"DF","cidade":"Ceilândia","mwp":6.45,"supervisor":"Vitor Valadares","tecnico":"Janderson Miranda","eletricista":"","mantenedor":"","equipe":"DF Centro 01","cluster":"DF Centro","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Centro Oeste","mob":"2025-12-19","lat":-15.779,"lng":-48.1225},{"nome":"Ceilândia 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"DF","cidade":"Ceilândia","mwp":5.309,"supervisor":"Vitor Valadares","tecnico":"Janderson Miranda","eletricista":"","mantenedor":"","equipe":"DF Centro 01","cluster":"DF Centro","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Centro Oeste","mob":"2025-12-19","lat":-15.78126,"lng":-48.16237},{"nome":"Céu Azul","status":"OPERAÇÃO","cliente":"Thopen","uf":"PR","cidade":"Santa Tereza do Oeste","mwp":3.758,"supervisor":"Pedro Candido","tecnico":"","eletricista":"Gilson Milhomem","mantenedor":"","equipe":"PR Sul 01","cluster":"PR Sul","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Sul","mob":"2025-12-19","lat":null,"lng":null},{"nome":"Cidade Gaucha","status":"OPERAÇÃO","cliente":"Thopen","uf":"PR","cidade":"Cidade Gaucha","mwp":3.229,"supervisor":"Pedro Candido","tecnico":"","eletricista":"Ronaldo Silva","mantenedor":"","equipe":"PR Oeste 01","cluster":"PR Oeste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sul","mob":"2026-01-07","lat":-23.406806,"lng":-52.924833},{"nome":"Colíder 1","status":"OPERAÇÃO","cliente":"Renogrid","uf":"MT","cidade":"Colíder","mwp":3.38,"supervisor":"Fred Alexandrino","tecnico":"","eletricista":"Deivity Saugo","mantenedor":"","equipe":"MT Norte 01","cluster":"MT Norte","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Centro Oeste","mob":"2025-10-22","lat":-10.77187,"lng":-55.4883},{"nome":"Colíder 2","status":"OPERAÇÃO","cliente":"Renogrid","uf":"MT","cidade":"Colíder","mwp":3.38,"supervisor":"Fred Alexandrino","tecnico":"","eletricista":"Deivity Saugo","mantenedor":"","equipe":"MT Norte 01","cluster":"MT Norte","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Centro Oeste","mob":"2025-10-22","lat":-10.82289,"lng":-55.38813},{"nome":"Colorado 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"PR","cidade":"Colorado","mwp":3.38,"supervisor":"Pedro Candido","tecnico":"Marcos Camargo","eletricista":"Douglas Silva","mantenedor":"","equipe":"PR Norte 01","cluster":"","faixa":"3MWp | 5MWp","tipologia":"","regiao":"","mob":null,"lat":null,"lng":null},{"nome":"Colorado 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"PR","cidade":"Colorado","mwp":1.34,"supervisor":"Pedro Candido","tecnico":"Marcos Camargo","eletricista":"Douglas Silva","mantenedor":"","equipe":"PR Norte 01","cluster":"","faixa":"1MWp | 3MWp","tipologia":"","regiao":"","mob":"2026-04-18","lat":null,"lng":null},{"nome":"Coração 1 a 2","status":"A MOBILIZAR","cliente":"Thopen","uf":"BA","cidade":"Coração de Maria","mwp":5.62,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"SC Oeste 01","cluster":"","faixa":"","tipologia":"","regiao":"","mob":null,"lat":null,"lng":null},{"nome":"Crateús 1","status":"OPERAÇÃO","cliente":"Renogrid","uf":"CE","cidade":"Crateús","mwp":6.75,"supervisor":"Fred Alexandrino","tecnico":"","eletricista":"","mantenedor":"Railson Gomes","equipe":"CE Oeste 02","cluster":"CE Oeste","faixa":"5MWp | 10MWp","tipologia":"SOLO FIXA","regiao":"Nordeste","mob":"2025-10-22","lat":-5.1942,"lng":-40.6415},{"nome":"Cristalina","status":"A MOBILIZAR","cliente":"Thopen","uf":"GO","cidade":"Cristalina","mwp":3.4,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"GO 03","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-16.698625,"lng":-47.561323},{"nome":"Delmiro Gouvea 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"AL","cidade":"Delmiro Gouveia","mwp":1.4,"supervisor":"Camila Viana","tecnico":"Ricardo Silva","eletricista":"","mantenedor":"","equipe":"AL Oeste 01","cluster":"AL Oeste","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Delmiro Gouvea 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"AL","cidade":"Delmiro Gouveia","mwp":1.4,"supervisor":"Camila Viana","tecnico":"Ricardo Silva","eletricista":"","mantenedor":"","equipe":"AL Oeste 01","cluster":"AL Oeste","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Delmiro Gouvea 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"AL","cidade":"Delmiro Gouveia","mwp":1.4,"supervisor":"Camila Viana","tecnico":"Ricardo Silva","eletricista":"","mantenedor":"","equipe":"AL Oeste 01","cluster":"AL Oeste","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Delmiro Gouvea 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"AL","cidade":"Delmiro Gouveia","mwp":1.4,"supervisor":"Camila Viana","tecnico":"Ricardo Silva","eletricista":"","mantenedor":"","equipe":"AL Oeste 01","cluster":"AL Oeste","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Demerval Lobão 1","status":"OPERAÇÃO","cliente":"GreenYellow","uf":"PI","cidade":"Dermeval Lobão","mwp":5.409,"supervisor":"Kevin Amorim","tecnico":"Ailton Leal","eletricista":"Antônio Neto","mantenedor":"","equipe":"PI Oeste 01","cluster":"PI Oeste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2025-10-20","lat":-5.409933,"lng":-42.699476},{"nome":"Elias Fausto 1","status":"OPERAÇÃO","cliente":"Renogrid","uf":"SP","cidade":"Elias Fausto","mwp":3.38,"supervisor":"Fred Alexandrino","tecnico":"Bruno Pupo","eletricista":"","mantenedor":"","equipe":"SP Leste 07","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Sudeste","mob":"2025-10-22","lat":-23.0265,"lng":-47.3523},{"nome":"Embu Guaçu","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"Embu Guaçu","mwp":3.32,"supervisor":"Danuth Fernandes","tecnico":"","eletricista":"","mantenedor":"","equipe":"SP Leste 06","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2026-05-18","lat":null,"lng":null},{"nome":"Fasoli","status":"A MOBILIZAR","cliente":"Thopen","uf":"PR","cidade":"Paranavaí","mwp":3.5,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"PR 02","faixa":"","tipologia":"SOLO FIXA","regiao":"","mob":null,"lat":-23.147893,"lng":-52.486674},{"nome":"Fazenda Limão 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"RJ","cidade":"Campos dos Goytacazes","mwp":2.25,"supervisor":"Danuth Fernandes","tecnico":"Carlos Pereira","eletricista":"Luiz Hermogenes","mantenedor":"Marco Siqueira","equipe":"RJ Norte 01","cluster":"RJ Norte","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":null,"lng":null},{"nome":"Fazenda São João","status":"A MOBILIZAR","cliente":"Thopen","uf":"RJ","cidade":"Campos dos Goytacazes","mwp":4.21,"supervisor":"Danuth Fernandes","tecnico":"Carlos Pereira","eletricista":"Luiz Hermogenes","mantenedor":"Marco Siqueira","equipe":"RJ Norte 01","cluster":"RJ Norte","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":null,"lat":null,"lng":null},{"nome":"Feliz Natal","status":"A MOBILIZAR","cliente":"Thopen","uf":"MT","cidade":"Feliz Natal","mwp":6.7,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"MT 01","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-12.374324,"lng":-54.914393},{"nome":"Fernandópolis","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Fernandópolis","mwp":3.654,"supervisor":"Camila Viana","tecnico":"","eletricista":"Paulo Ribeiro","mantenedor":"","equipe":"SP Oeste 02","cluster":"SP Oeste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-11-20","lat":-20.270967,"lng":-50.188228},{"nome":"Flores de Goiás","status":"A MOBILIZAR","cliente":"Thopen","uf":"GO","cidade":"Flores de Goiás","mwp":3.4,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"GO 01","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-14.419757,"lng":-47.006867},{"nome":"Formosa","status":"A MOBILIZAR","cliente":"Thopen","uf":"GO","cidade":"Formosa","mwp":6.7,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"GO 01","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-15.058701,"lng":-47.46306},{"nome":"Goytacazes 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"RJ","cidade":"Campos dos Goytacazes","mwp":3.128,"supervisor":"Danuth Fernandes","tecnico":"Carlos Pereira","eletricista":"Luiz Hermogenes","mantenedor":"Marco Siqueira","equipe":"RJ Norte 01","cluster":"RJ Norte","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-10-20","lat":-3.285791,"lng":-39.648716},{"nome":"Guaratinguetá 5","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Guaratinguetá","mwp":3.2,"supervisor":"Danuth Fernandes","tecnico":"Henri Almeida","eletricista":"","mantenedor":"Douglas Chagas","equipe":"SP Leste 01","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-10-20","lat":null,"lng":null},{"nome":"Guatambu 1 a 4","status":"A MOBILIZAR","cliente":"Thopen","uf":"SC","cidade":"Guatambu","mwp":6.1,"supervisor":"Camila Viana","tecnico":"","eletricista":"","mantenedor":"","equipe":"SC Oeste 01","cluster":"SC Oeste","faixa":"","tipologia":"","regiao":"","mob":"2026-05-18","lat":null,"lng":null},{"nome":"Ibaté 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Ibaté","mwp":3.13,"supervisor":"Fred Alexandrino","tecnico":"Rodolfo Oliveira","eletricista":"","mantenedor":"Andrick Gouveia","equipe":"SP Centro 01","cluster":"SP Centro","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":-21.95592,"lng":-47.98389},{"nome":"Ibaté 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Ibaté","mwp":3.13,"supervisor":"Fred Alexandrino","tecnico":"Rodolfo Oliveira","eletricista":"","mantenedor":"Andrick Gouveia","equipe":"SP Centro 01","cluster":"SP Centro","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":null,"lng":null},{"nome":"Ibirapuã 1","status":"OPERAÇÃO","cliente":"Ultragaz","uf":"BA","cidade":"Ibirapuã","mwp":3.39,"supervisor":"Vitor Valadares","tecnico":"Renato Julien","eletricista":"","mantenedor":"Alex Cardoso","equipe":"BA Sul 01","cluster":"BA Sul","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2024-12-23","lat":-17.719611,"lng":-40.104111},{"nome":"Ibirapuã 2","status":"OPERAÇÃO","cliente":"Ultragaz","uf":"BA","cidade":"Ibirapuã","mwp":3.39,"supervisor":"Vitor Valadares","tecnico":"Renato Julien","eletricista":"","mantenedor":"Alex Cardoso","equipe":"BA Sul 01","cluster":"BA Sul","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2024-12-23","lat":-17.731,"lng":-40.108306},{"nome":"Icó 2","status":"A MOBILIZAR","cliente":"GreenYellow","uf":"CE","cidade":"Icó","mwp":3.376,"supervisor":"Kevin Amorim","tecnico":"Leonardo Dias","eletricista":"","mantenedor":"Denilson Araújo","equipe":"CE Sul 01","cluster":"CE Sul","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Indaiatuba","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Indaiatuba","mwp":5.859,"supervisor":"Danuth Fernandes","tecnico":"","eletricista":"","mantenedor":"","equipe":"SP Leste 03","cluster":"SP Leste","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Sudeste","mob":"2025-12-15","lat":null,"lng":null},{"nome":"Inhapi","status":"A MOBILIZAR","cliente":"Thopen","uf":"AL","cidade":"Inhapi","mwp":3.9,"supervisor":"Camila Viana","tecnico":"Ricardo Silva","eletricista":"","mantenedor":"","equipe":"AL Oeste 01","cluster":"AL Oeste","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":"2026-05-18","lat":-9.285968,"lng":-37.81094},{"nome":"Ipixuna 1 e 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"PA","cidade":"Ipixuna do Pará","mwp":3.23,"supervisor":"Pedro Candido","tecnico":"Wesllen Castro","eletricista":"","mantenedor":"","equipe":"PA Norte 03","cluster":"PA Norte","faixa":"1MWp | 3MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":"2025-10-20","lat":-2.57265,"lng":-47.50434},{"nome":"Ipixuna do Pará 1","status":"OPERAÇÃO","cliente":"2C","uf":"PA","cidade":"Ipixuna do Pará","mwp":6.918,"supervisor":"Pedro Candido","tecnico":"Wesllen Castro","eletricista":"","mantenedor":"","equipe":"PA Norte 03","cluster":"PA Norte","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":"2025-12-22","lat":null,"lng":47.471203},{"nome":"Irece 2","status":"OPERAÇÃO","cliente":"GreenYellow","uf":"BA","cidade":"Irecê","mwp":2.751,"supervisor":"Kevin Amorim","tecnico":"Olímpio Lima","eletricista":"Albert Ribeiro","mantenedor":"","equipe":"BA Centro 01","cluster":"BA Centro","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":"2025-12-01","lat":-11.298493,"lng":-41.90244},{"nome":"Jacundá 100","status":"OPERAÇÃO","cliente":"Athon","uf":"PA","cidade":"Jacundá","mwp":6.71,"supervisor":"Pedro Candido","tecnico":"James Chaves","eletricista":"Joilson Silva","mantenedor":"","equipe":"PA Leste 01","cluster":"PA Leste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":"2025-06-16","lat":-4.460946,"lng":-49.092893},{"nome":"Junco","status":"OPERAÇÃO","cliente":"Thopen","uf":"PI","cidade":"Junco","mwp":6.396,"supervisor":"Kevin Amorim","tecnico":"Ailton Leal","eletricista":"Antônio Neto","mantenedor":"","equipe":"PI Oeste 01","cluster":"PI Oeste","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Nordeste","mob":"2026-01-12","lat":null,"lng":null},{"nome":"Lajedo 1","status":"A MOBILIZAR","cliente":"Axis","uf":"PE","cidade":"Lajedo","mwp":3.25,"supervisor":"Vitor Valadares","tecnico":"Matheus Leite","eletricista":"","mantenedor":"Ygo Leite","equipe":"PE Leste 01","cluster":"PE Leste","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Nordeste","mob":"2026-05-29","lat":null,"lng":null},{"nome":"Linhares 1","status":"A MOBILIZAR","cliente":"Axis","uf":"ES","cidade":"Linhres","mwp":3.267,"supervisor":"Vitor Valadares","tecnico":"","eletricista":"","mantenedor":"","equipe":"ES Norte 02","cluster":"ES Norte","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Sudeste","mob":"2026-05-10","lat":null,"lng":null},{"nome":"Linhares 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"ES","cidade":"Linhares","mwp":1.009,"supervisor":"Vitor Valadares","tecnico":"Marcos Duarte","eletricista":"","mantenedor":"Italo Oliveira","equipe":"ES Norte 01","cluster":"ES Norte","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":null,"lng":null},{"nome":"Macaíba 1","status":"OPERAÇÃO","cliente":"GreenYellow","uf":"RN","cidade":"Macaíba","mwp":4.423,"supervisor":"Kevin Amorim","tecnico":"Cleilton Junior","eletricista":"","mantenedor":"Valderio Paz","equipe":"RN Leste 01","cluster":"RN Leste","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2025-12-15","lat":-5.85334,"lng":-35.367377},{"nome":"Mãe do Rio 100","status":"OPERAÇÃO","cliente":"Athon","uf":"PA","cidade":"Mãe do Rio","mwp":6.49,"supervisor":"Pedro Candido","tecnico":"Frank Melo","eletricista":"","mantenedor":"Azinaldo Santos","equipe":"PA Norte 02","cluster":"PA Norte","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":"2025-05-05","lat":-2.0611,"lng":-47.5604},{"nome":"Mandaguaçu","status":"OPERAÇÃO","cliente":"Thopen","uf":"PR","cidade":"Mandaguaçu","mwp":5.914,"supervisor":"Pedro Candido","tecnico":"Marcos Camargo","eletricista":"Douglas Silva","mantenedor":"","equipe":"PR Norte 01","cluster":"PR Norte","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Sul","mob":"2025-12-19","lat":null,"lng":-52.144194},{"nome":"Marabá 100","status":"OPERAÇÃO","cliente":"Athon","uf":"PA","cidade":"Marabá","mwp":6.12,"supervisor":"Pedro Candido","tecnico":"James Chaves","eletricista":"Joilson Silva","mantenedor":"","equipe":"PA Leste 01","cluster":"PA Leste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":"2025-05-05","lat":-5.13209,"lng":-49.01522},{"nome":"Marabá 200","status":"OPERAÇÃO","cliente":"Athon","uf":"PA","cidade":"Marabá","mwp":6.54,"supervisor":"Pedro Candido","tecnico":"James Chaves","eletricista":"Joilson Silva","mantenedor":"","equipe":"PA Leste 01","cluster":"PA Leste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":"2025-05-05","lat":-5.224956,"lng":-49.029189},{"nome":"Marajoara 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Caçapava","mwp":2.4,"supervisor":"Danuth Fernandes","tecnico":"Hélio Silva","eletricista":"","mantenedor":"Gabriel Alvim","equipe":"SP Leste 04","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":-23.050056,"lng":-45.656111},{"nome":"Marajoara 2","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"Caçapava","mwp":3.2,"supervisor":"Danuth Fernandes","tecnico":"Hélio Silva","eletricista":"","mantenedor":"Gabriel Alvim","equipe":"SP Leste 04","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":null,"lat":null,"lng":null},{"nome":"Marialva 1","status":"OPERAÇÃO","cliente":"Axis","uf":"PR","cidade":"Marialva","mwp":2.6,"supervisor":"Pedro Candido","tecnico":"Marcos Camargo","eletricista":"Douglas Silva","mantenedor":"","equipe":"PR Norte 01","cluster":"PR Norte","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sul","mob":"2025-09-01","lat":-23.477504,"lng":-51.76457},{"nome":"Matão (Topázio)","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Matão","mwp":3.39,"supervisor":"Fred Alexandrino","tecnico":"","eletricista":"Eduardo Souza","mantenedor":"","equipe":"SP Centro 02","cluster":"SP Centro","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2026-02-03","lat":-21.61,"lng":-48.36},{"nome":"Matão 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Matão","mwp":3.304,"supervisor":"Fred Alexandrino","tecnico":"","eletricista":"Eduardo Souza","mantenedor":"","equipe":"SP Centro 02","cluster":"SP Centro","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-12-01","lat":-21.585569,"lng":-48.385953},{"nome":"Matões 100","status":"OPERAÇÃO","cliente":"Athon","uf":"MA","cidade":"Matões","mwp":6.26,"supervisor":"Kevin Amorim","tecnico":"Francisco Junior","eletricista":"","mantenedor":"Pedro Silva","equipe":"MA Leste 02","cluster":"MA Leste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2025-04-07","lat":-5.569995,"lng":-43.181762},{"nome":"Matões 200","status":"OPERAÇÃO","cliente":"Athon","uf":"MA","cidade":"Matões","mwp":6.48,"supervisor":"Kevin Amorim","tecnico":"Francisco Junior","eletricista":"","mantenedor":"Pedro Silva","equipe":"MA Leste 02","cluster":"MA Leste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2025-04-07","lat":-5.574019,"lng":-43.176243},{"nome":"Mirassol","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"Mirassol","mwp":3.4,"supervisor":"Camila Viana","tecnico":"João Neves","eletricista":"Paulo Ribeiro","mantenedor":"","equipe":"SP Oeste 02","cluster":"SP Oeste","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":"2026-01-15","lat":-20.848207,"lng":-49.514085},{"nome":"Naviraí","status":"A MOBILIZAR","cliente":"Thopen","uf":"MS","cidade":"Naviraí","mwp":3.4,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"PR 03","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-23.088971,"lng":-54.18019},{"nome":"Nobres 1","status":"OPERAÇÃO","cliente":"Renogrid","uf":"MT","cidade":"Nobres","mwp":3.38,"supervisor":"Fred Alexandrino","tecnico":"Valmir Junior","eletricista":"","mantenedor":"Lucas Lima","equipe":"MT Sul 03","cluster":"MT Sul","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Centro Oeste","mob":"2025-10-22","lat":-14.734723,"lng":-56.341146},{"nome":"Nova Ipixuna 1","status":"A MOBILIZAR","cliente":"2C","uf":"PA","cidade":"Nova Ipixuna do Pará","mwp":3.469,"supervisor":"Pedro Candido","tecnico":"","eletricista":"","mantenedor":"","equipe":"PA Leste 02","cluster":"PA Leste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":null,"lat":null,"lng":null},{"nome":"Nova Londrina 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"PR","cidade":"Nova Londrina","mwp":2.7625,"supervisor":"Pedro Candido","tecnico":"","eletricista":"Ronaldo Silva","mantenedor":"","equipe":"PR Oeste 01","cluster":"PR Oeste","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Sul","mob":"2026-01-07","lat":-22.744736,"lng":-52.995991},{"nome":"Nova Londrina 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"PR","cidade":"Nova Londrina","mwp":2.7625,"supervisor":"Pedro Candido","tecnico":"","eletricista":"Ronaldo Silva","mantenedor":"","equipe":"PR Oeste 01","cluster":"PR Oeste","faixa":"","tipologia":"","regiao":"Sul","mob":"2026-01-07","lat":-22.744736,"lng":-52.995991},{"nome":"Nova Mutum","status":"A MOBILIZAR","cliente":"Thopen","uf":"MT","cidade":"Nova Mutum","mwp":6.7,"supervisor":"Fred Alexandrino","tecnico":"Valmir Junior","eletricista":"","mantenedor":"Lucas Lima","equipe":"MT Sul 03","cluster":"MT Sul","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":"2026-01-15","lat":-13.777932,"lng":-56.099638},{"nome":"Nova Venécia 1","status":"A MOBILIZAR","cliente":"Axis","uf":"ES","cidade":"Nova Venécia","mwp":0.655,"supervisor":"Vitor Valadares","tecnico":"Marcos Duarte","eletricista":"","mantenedor":"Italo Oliveira","equipe":"ES Norte 01","cluster":"ES Norte","faixa":"500kWp | 1MWp","tipologia":"SOLO FIXA","regiao":"Sudeste","mob":"2026-05-29","lat":null,"lng":null},{"nome":"Nova Venécia 2","status":"A MOBILIZAR","cliente":"Axis","uf":"ES","cidade":"Nova Venécia","mwp":0.65,"supervisor":"Vitor Valadares","tecnico":"Marcos Duarte","eletricista":"","mantenedor":"Italo Oliveira","equipe":"ES Norte 01","cluster":"ES Norte","faixa":"1MWp | 3MWp","tipologia":"SOLO FIXA","regiao":"Sudeste","mob":"2026-05-29","lat":null,"lng":null},{"nome":"Nova Xavantina 1","status":"OPERAÇÃO","cliente":"Renogrid","uf":"MT","cidade":"Nova Xavantina","mwp":3.38,"supervisor":"Fred Alexandrino","tecnico":"Damião Martins","eletricista":"","mantenedor":"Gabriel Oliveira","equipe":"MT Leste 01","cluster":"MT Leste","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Centro Oeste","mob":"2025-10-22","lat":-14.637256,"lng":-52.368981},{"nome":"Nova Xavantina 2","status":"OPERAÇÃO","cliente":"Renogrid","uf":"MT","cidade":"Nova Xavantina","mwp":3.38,"supervisor":"Fred Alexandrino","tecnico":"Damião Martins","eletricista":"","mantenedor":"Gabriel Oliveira","equipe":"MT Leste 01","cluster":"MT Leste","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Centro Oeste","mob":"2025-10-22","lat":null,"lng":null},{"nome":"Ouro Branco Exp","status":"A MOBILIZAR","cliente":"Thopen","uf":"AL","cidade":"Ouro Branco","mwp":1.4,"supervisor":"Camila Viana","tecnico":"Ricardo Silva","eletricista":"","mantenedor":"","equipe":"AL Oeste 01","cluster":"AL Oeste","faixa":"","tipologia":"","regiao":"","mob":"2026-05-18","lat":-9.143537,"lng":-37.368469},{"nome":"Ouro Branco I e II","status":"A MOBILIZAR","cliente":"Thopen","uf":"AL","cidade":"Ouro Branco","mwp":1.3,"supervisor":"Camila Viana","tecnico":"Ricardo Silva","eletricista":"","mantenedor":"","equipe":"AL Oeste 01","cluster":"AL Oeste","faixa":"","tipologia":"","regiao":"","mob":"2026-05-18","lat":-9.142209,"lng":-37.368812},{"nome":"Palotina II","status":"A MOBILIZAR","cliente":"Thopen","uf":"PR","cidade":"Palotina","mwp":3.2,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"PR 04","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-24.266089,"lng":-53.875841},{"nome":"Parelhas","status":"OPERAÇÃO","cliente":"Thopen","uf":"RN","cidade":"Parelhas","mwp":2.604,"supervisor":"Camila Viana","tecnico":"Claudio Silva","eletricista":"","mantenedor":"","equipe":"RN Sul 01","cluster":"RN Sul","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":"2025-12-29","lat":null,"lng":null},{"nome":"PE 1","status":"OPERAÇÃO","cliente":"Axis","uf":"PE","cidade":"São José do Egito","mwp":0.13,"supervisor":"Kevin Amorim","tecnico":"Rodrigo Silva","eletricista":"","mantenedor":"Emerson Silva","equipe":"PE Oeste 01","cluster":"PE Oeste","faixa":"0 kWp | 100kWp","tipologia":"SOLO FIXA","regiao":"Nordeste","mob":"2025-06-02","lat":-7.506111,"lng":-37.268611},{"nome":"PE 2","status":"OPERAÇÃO","cliente":"Axis","uf":"PE","cidade":"Petrolina","mwp":3.402,"supervisor":"Kevin Amorim","tecnico":"Rodrigo Silva","eletricista":"","mantenedor":"Emerson Silva","equipe":"PE Oeste 01","cluster":"PE Oeste","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Nordeste","mob":"2025-06-02","lat":-9.300937,"lng":-40.564209},{"nome":"PE 3","status":"OPERAÇÃO","cliente":"Axis","uf":"PE","cidade":"Petrolina","mwp":3.474,"supervisor":"Kevin Amorim","tecnico":"Rodrigo Silva","eletricista":"","mantenedor":"Emerson Silva","equipe":"PE Oeste 01","cluster":"PE Oeste","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Nordeste","mob":"2025-06-02","lat":-9.133916,"lng":-40.546686},{"nome":"Piracicaba 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Piracicaba","mwp":2.99,"supervisor":"Danuth Fernandes","tecnico":"Felipe Lima","eletricista":"","mantenedor":"Igor Cruz","equipe":"SP Leste 05","cluster":"SP Leste","faixa":"1MWp | 3MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-11-19","lat":-22.62799,"lng":-47.65957},{"nome":"Poconé 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"MT","cidade":"Poconé","mwp":3.25,"supervisor":"Fred Alexandrino","tecnico":"","eletricista":"Pedro Oliveira","mantenedor":"","equipe":"MT Sul 02","cluster":"MT Sul","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Centro Oeste","mob":"2025-12-01","lat":-16.282702,"lng":-56.607819},{"nome":"Pompéia","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"Pompéia","mwp":3.4,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"SP 02","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-21.984783,"lng":-50.159264},{"nome":"Ponto Belo 1","status":"OPERAÇÃO","cliente":"Axis","uf":"ES","cidade":"Ponto Belo","mwp":3.13,"supervisor":"Vitor Valadares","tecnico":"Renato Julien","eletricista":"","mantenedor":"Alex Cardoso","equipe":"BA Sul 01","cluster":"BA Sul","faixa":"3MWp | 5MWp","tipologia":"SOLO FIXA","regiao":"Nordeste","mob":"2025-06-16","lat":-18.13039,"lng":-40.52545},{"nome":"Porteiras 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"CE","cidade":"Porteiras","mwp":3.51,"supervisor":"Kevin Amorim","tecnico":"","eletricista":"","mantenedor":"","equipe":"CE Sul 02","cluster":"CE Sul","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":null,"lat":-7.6915,"lng":-39.1278},{"nome":"Porto","status":"A MOBILIZAR","cliente":"Thopen","uf":"PR","cidade":"Porto","mwp":7.0,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"PR 03","faixa":"","tipologia":"SOLO FIXA","regiao":"","mob":null,"lat":-23.580844,"lng":-53.335829},{"nome":"Porto Real 2","status":"A MOBILIZAR","cliente":"Thopen","uf":"RJ","cidade":"Porto Real","mwp":3.375,"supervisor":"Danuth Fernandes","tecnico":"","eletricista":"Adão Neto","mantenedor":"","equipe":"RJ Sul 01","cluster":"RJ Sul","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":null,"lat":null,"lng":null},{"nome":"Porto Real 3","status":"A MOBILIZAR","cliente":"Thopen","uf":"RJ","cidade":"Porto Real","mwp":3.35,"supervisor":"Danuth Fernandes","tecnico":"","eletricista":"Adão Neto","mantenedor":"","equipe":"RJ Sul 01","cluster":"RJ Sul","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":null,"lat":null,"lng":null},{"nome":"Primavera 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"ES","cidade":"Vargem Grande","mwp":1.296,"supervisor":"Vitor Valadares","tecnico":"Marcos Duarte","eletricista":"","mantenedor":"Italo Oliveira","equipe":"ES Norte 01","cluster":"ES Norte","faixa":"1MWp | 3MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-12-15","lat":-18.819242,"lng":-39.909458},{"nome":"Primavera 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"ES","cidade":"Vargem Grande","mwp":1.296,"supervisor":"Vitor Valadares","tecnico":"Marcos Duarte","eletricista":"","mantenedor":"Italo Oliveira","equipe":"ES Norte 01","cluster":"ES Norte","faixa":"1MWp | 3MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-12-15","lat":-18.819242,"lng":-39.909458},{"nome":"Ribeirão Cascalheiras","status":"A MOBILIZAR","cliente":"Thopen","uf":"MT","cidade":"Ribeirão Cascalheiras","mwp":3.22,"supervisor":"Fred Alexandrino","tecnico":"Damião Martins","eletricista":"","mantenedor":"Gabriel Oliveira","equipe":"MT Leste 01","cluster":"MT Leste","faixa":"","tipologia":"","regiao":"","mob":"2026-05-18","lat":null,"lng":null},{"nome":"Rodrigues I","status":"OPERAÇÃO","cliente":"Thopen","uf":"RN","cidade":"Santa Cruz","mwp":2.56,"supervisor":"Camila Viana","tecnico":"Claudio Silva","eletricista":"","mantenedor":"","equipe":"RN Sul 01","cluster":"RN Leste","faixa":"1MWp | 3MWp","tipologia":"SOLO FIXA","regiao":"Nordeste","mob":"2025-12-29","lat":-5.665989,"lng":-36.019794},{"nome":"Rodrigues II","status":"A MOBILIZAR","cliente":"Thopen","uf":"RN","cidade":"São Bento do Norte","mwp":2.57,"supervisor":"Camila Viana","tecnico":"","eletricista":"","mantenedor":"","equipe":"RN Norte 01","cluster":"RN Norte","faixa":"1MWp | 3MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Salto Pirapora 3","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Salto de Pirapora","mwp":1.35,"supervisor":"Danuth Fernandes","tecnico":"Eduardo Mendes","eletricista":"Milton Ramos","mantenedor":"","equipe":"SP Leste 02","cluster":"SP Leste","faixa":"1MWp | 3MWp","tipologia":"SOLO FIXA","regiao":"Sudeste","mob":"2025-10-20","lat":-23.68939,"lng":-47.54758},{"nome":"Santa Bárbara 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Santa Bárbara D´Oeste","mwp":3.12,"supervisor":"Danuth Fernandes","tecnico":"Felipe Lima","eletricista":"","mantenedor":"Igor Cruz","equipe":"SP Leste 05","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":-22.79346,"lng":-47.408892},{"nome":"Santa Maria do Pará 100","status":"OPERAÇÃO","cliente":"Athon","uf":"PA","cidade":"Santa Maria do Pará","mwp":7.128,"supervisor":"Pedro Candido","tecnico":"Gilson Souza","eletricista":"Manuel Silva","mantenedor":"","equipe":"PA Norte 01","cluster":"PA Norte","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":"2025-03-11","lat":-1.33739,"lng":-47.56044},{"nome":"Santa Rita","status":"A MOBILIZAR","cliente":"Thopen","uf":"GO","cidade":"Santa Rita do Araguaia","mwp":3.4,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"GO 02","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-17.320989,"lng":-53.167708},{"nome":"Santana do Ipanema","status":"A MOBILIZAR","cliente":"Thopen","uf":"AL","cidade":"Santana do Ipanema","mwp":3.2,"supervisor":"Camila Viana","tecnico":"Ricardo Silva","eletricista":"","mantenedor":"","equipe":"AL Oeste 01","cluster":"AL Oeste","faixa":"","tipologia":"","regiao":"","mob":"2026-05-18","lat":-9.40363,"lng":-37.213037},{"nome":"Santarem 1 e 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"PA","cidade":"Santarém","mwp":6.51,"supervisor":"Pedro Candido","tecnico":"Julio Willers","eletricista":"Jefferson Almeida","mantenedor":"","equipe":"PA Oeste 01","cluster":"PA Oeste","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Norte","mob":"2025-10-20","lat":-2.511697,"lng":-54.676981},{"nome":"Santo Inácio 1 e 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Caçapava","mwp":2.63,"supervisor":"Danuth Fernandes","tecnico":"Hélio Silva","eletricista":"","mantenedor":"Gabriel Alvim","equipe":"SP Leste 04","cluster":"SP Leste","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":-23.175119,"lng":-45.703242},{"nome":"São Bento 5","status":"OPERAÇÃO","cliente":"Thopen","uf":"RJ","cidade":"Barra Mansa","mwp":3.268,"supervisor":"Danuth Fernandes","tecnico":"","eletricista":"Adão Neto","mantenedor":"","equipe":"RJ Sul 01","cluster":"RJ Sul","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":-22.456809,"lng":-43.910553},{"nome":"São Bento do Una","status":"OPERAÇÃO","cliente":"Thopen","uf":"PE","cidade":"São Bento do Una","mwp":3.4,"supervisor":"Vitor Valadares","tecnico":"Matheus Leite","eletricista":"","mantenedor":"Ygo Leite","equipe":"PE Leste 01","cluster":"PE Leste","faixa":"","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2026-02-19","lat":-8.541909,"lng":-36.41835},{"nome":"São Carlos","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"São Carlos","mwp":3.4,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"SP 01","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-22.032779,"lng":-47.803174},{"nome":"Saturnino 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"RJ","cidade":"Campos dos Goytacazes","mwp":4.664,"supervisor":"Danuth Fernandes","tecnico":"Carlos Pereira","eletricista":"Luiz Hermogenes","mantenedor":"Marco Siqueira","equipe":"RJ Norte 01","cluster":"RJ Norte","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-11-17","lat":-21.888641,"lng":-41.215604},{"nome":"Senador Elói I","status":"OPERAÇÃO","cliente":"Thopen","uf":"RN","cidade":"Ceará Mirim","mwp":1.28,"supervisor":"Kevin Amorim","tecnico":"Cleilton Junior","eletricista":"","mantenedor":"Valderio Paz","equipe":"RN Leste 01","cluster":"RN Leste","faixa":"1MWp | 3MWp","tipologia":"SOLO FIXA","regiao":"Nordeste","mob":"2025-12-18","lat":null,"lng":null},{"nome":"Sete Lagoas 2","status":"OPERAÇÃO","cliente":"2C","uf":"MG","cidade":"Sete Lagoas","mwp":3.469,"supervisor":"Fred Alexandrino","tecnico":"Leandro Viegas","eletricista":"Daniel Paula","mantenedor":"","equipe":"MG Centro 01","cluster":"MG Centro","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-12-01","lat":-19.502306,"lng":-44.203342},{"nome":"Sigefredo Pacheco 1","status":"A MOBILIZAR","cliente":"GreenYellow","uf":"PI","cidade":"Sigefredo Pacheco","mwp":6.801,"supervisor":"Kevin Amorim","tecnico":"","eletricista":"","mantenedor":"","equipe":"PI Leste 01","cluster":"PI Leste","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Sitio dos Nogueiras","status":"OPERAÇÃO","cliente":"Thopen","uf":"GO","cidade":"Cidade Ocidental","mwp":5.3,"supervisor":"Vitor Valadares","tecnico":"Janderson Miranda","eletricista":"","mantenedor":"","equipe":"GO Centro 01","cluster":"GO Centro","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Centro Oeste","mob":"2025-12-19","lat":-16.112051,"lng":-47.847401},{"nome":"Sorocaba","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Sorocaba","mwp":4.185,"supervisor":"Danuth Fernandes","tecnico":"Eduardo Mendes","eletricista":"Milton Ramos","mantenedor":"","equipe":"SP Leste 02","cluster":"SP Leste","faixa":"","tipologia":"","regiao":"","mob":"2026-04-28","lat":null,"lng":null},{"nome":"Taguai 1 e 2","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"Taguai","mwp":1.95,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"SP Sul 01","cluster":"SP Sul","faixa":"","tipologia":"","regiao":"","mob":null,"lat":null,"lng":null},{"nome":"Tanabi","status":"OPERAÇÃO","cliente":"Thopen","uf":"SP","cidade":"Tanabi","mwp":6.357,"supervisor":"Camila Viana","tecnico":"João Neves","eletricista":"","mantenedor":"","equipe":"SP Oeste 02","cluster":"SP Oeste","faixa":"5MWp | 10MWp","tipologia":"","regiao":"Sudeste","mob":"2025-12-15","lat":-20.647575,"lng":-49.659538},{"nome":"Timon 100","status":"OPERAÇÃO","cliente":"Athon","uf":"MA","cidade":"Timon","mwp":6.7,"supervisor":"Kevin Amorim","tecnico":"Luiz Silva","eletricista":"","mantenedor":"José Neto","equipe":"MA Leste 01","cluster":"MA Leste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2025-04-04","lat":-5.163521,"lng":-42.85366},{"nome":"Timon 200","status":"OPERAÇÃO","cliente":"Athon","uf":"MA","cidade":"Timon","mwp":6.93,"supervisor":"Kevin Amorim","tecnico":"Luiz Silva","eletricista":"","mantenedor":"José Neto","equipe":"MA Leste 01","cluster":"MA Leste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2025-03-11","lat":-5.175778,"lng":-42.834806},{"nome":"Tucano","status":"OPERAÇÃO","cliente":"SEMP","uf":"BA","cidade":"Tucano","mwp":2.877,"supervisor":"Vitor Valadares","tecnico":"","eletricista":"Walter Santos","mantenedor":"Tarcísio Lima","equipe":"BA Norte 01","cluster":"","faixa":"","tipologia":"","regiao":"","mob":"2026-04-06","lat":null,"lng":null},{"nome":"Tupi Paulista 1","status":"OPERAÇÃO","cliente":"2C","uf":"SP","cidade":"Tupi Paulista","mwp":6.8,"supervisor":"Pedro Candido","tecnico":"Carlos Godoi","eletricista":"","mantenedor":"João Salles","equipe":"SP Oeste 01","cluster":"SP Oeste","faixa":"5MWp | 10MWp","tipologia":"SOLO TRACKER","regiao":"Sudeste","mob":"2025-07-14","lat":-21.402947,"lng":-51.56428},{"nome":"União 1 e 2","status":"A MOBILIZAR","cliente":"2C","uf":"PI","cidade":"União","mwp":4.46,"supervisor":"Kevin Amorim","tecnico":"","eletricista":"","mantenedor":"","equipe":"PI Leste 01","cluster":"PI Leste","faixa":"3MWp | 5MWp","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":null,"lat":null,"lng":null},{"nome":"Urupês 1","status":"A MOBILIZAR","cliente":"Thopen","uf":"SP","cidade":"Urupês","mwp":4.21,"supervisor":"Camila Viana","tecnico":"","eletricista":"","mantenedor":"","equipe":"SP Norte 01","cluster":"SP Norte","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":null,"lat":-21.155083,"lng":-49.284972},{"nome":"Vargem Grande 1","status":"OPERAÇÃO","cliente":"Thopen","uf":"ES","cidade":"São Mateus","mwp":4.8,"supervisor":"Vitor Valadares","tecnico":"Marcos Duarte","eletricista":"","mantenedor":"Italo Oliveira","equipe":"ES Norte 01","cluster":"ES Norte","faixa":"3MWp | 5MWp","tipologia":"","regiao":"Sudeste","mob":"2025-10-20","lat":-18.742513,"lng":-39.795761},{"nome":"Vera","status":"A MOBILIZAR","cliente":"Thopen","uf":"MT","cidade":"Vera","mwp":3.1,"supervisor":"","tecnico":"","eletricista":"","mantenedor":"","equipe":"","cluster":"MT 01","faixa":"","tipologia":"SOLO TRACKER","regiao":"","mob":null,"lat":-12.308535,"lng":-55.282581},{"nome":"Vertentes 2","status":"OPERAÇÃO","cliente":"Thopen","uf":"PE","cidade":"Vertentes","mwp":3.4,"supervisor":"Vitor Valadares","tecnico":"Matheus Leite","eletricista":"","mantenedor":"Ygo Leite","equipe":"PE Leste 01","cluster":"PE Leste","faixa":"","tipologia":"SOLO TRACKER","regiao":"Nordeste","mob":"2026-02-19","lat":-7.933712,"lng":-35.973894}];
+const EVOL = [{"mes":"Dez/24","usinas":2,"mwp":6.78,"cumUsinas":2,"cumMwp":6.78},{"mes":"Mar/25","usinas":3,"mwp":18.96,"cumUsinas":5,"cumMwp":25.74},{"mes":"Abr/25","usinas":3,"mwp":19.44,"cumUsinas":8,"cumMwp":45.18},{"mes":"Mai/25","usinas":3,"mwp":19.15,"cumUsinas":11,"cumMwp":64.33},{"mes":"Jun/25","usinas":5,"mwp":16.85,"cumUsinas":16,"cumMwp":81.17},{"mes":"Jul/25","usinas":1,"mwp":6.8,"cumUsinas":17,"cumMwp":87.97},{"mes":"Set/25","usinas":1,"mwp":2.6,"cumUsinas":18,"cumMwp":90.57},{"mes":"Out/25","usinas":29,"mwp":96.74,"cumUsinas":47,"cumMwp":187.31},{"mes":"Nov/25","usinas":7,"mwp":32.88,"cumUsinas":54,"cumMwp":220.19},{"mes":"Dez/25","usinas":20,"mwp":74.7,"cumUsinas":74,"cumMwp":294.89},{"mes":"Jan/26","usinas":4,"mwp":15.15,"cumUsinas":78,"cumMwp":310.04},{"mes":"Fev/26","usinas":4,"mwp":12.89,"cumUsinas":82,"cumMwp":322.93},{"mes":"Abr/26","usinas":4,"mwp":11.0,"cumUsinas":86,"cumMwp":333.93}];
+
+
+
+const SUP_C = {
+  'Pedro Candido':   {c:'#3cb8ff',bg:'rgba(60,184,255,0.12)',bdr:'rgba(60,184,255,0.3)'},
+  'Fred Alexandrino':{c:'#ff7c3a',bg:'rgba(255,124,58,0.12)',bdr:'rgba(255,124,58,0.3)'},
+  'Kevin Amorim':    {c:'#a9db21',bg:'rgba(169,219,33,0.12)',bdr:'rgba(169,219,33,0.3)'},
+  'Danuth Fernandes':{c:'#b07dff',bg:'rgba(176,125,255,0.12)',bdr:'rgba(176,125,255,0.3)'},
+  'Camila Viana':    {c:'#00dfc0',bg:'rgba(0,223,192,0.12)',bdr:'rgba(0,223,192,0.3)'},
+  'Vitor Valadares': {c:'#ffc020',bg:'rgba(255,192,32,0.12)',bdr:'rgba(255,192,32,0.3)'},
+};
+const PAL = ['#a9db21','#3cb8ff','#ff7c3a','#b07dff','#ffc020','#00dfc0','#ff4f4f','#84cc16','#ec4899','#f59e0b','#6366f1','#14b8a6'];
+let charts={}, activeSup=null, activeCliente=null;
+
+// ── FILTER LOGIC ──
+function getOp() {
+  let op = ALL.filter(u=>u.status==='OPERAÇÃO');
+  if(activeSup) op = op.filter(u=>u.supervisor===activeSup);
+  if(activeCliente) op = op.filter(u=>u.cliente===activeCliente);
+  return op;
+}
+function getAmob() {
+  let am = ALL.filter(u=>u.status==='A MOBILIZAR');
+  if(activeSup) am = am.filter(u=>u.supervisor===activeSup);
+  if(activeCliente) am = am.filter(u=>u.cliente===activeCliente);
+  return am;
+}
+function getEvol() { return EVOL; }
+function updateInfo() {}
+
+// ── SUPERVISOR FILTER ──
+function toggleSupFilter(name) {
+  activeSup = activeSup===name ? null : name;
+  updateFilterBanner(); updateSupCards(); updateClienteCards(); updateKPIs();
+  rebuildCharts(); filterTable(); renderMapMarkers();
+}
+function clearSupFilter() {
+  activeSup=null;
+  updateFilterBanner(); updateSupCards(); updateClienteCards(); updateKPIs();
+  rebuildCharts(); filterTable(); renderMapMarkers();
+}
+function toggleClienteFilter(name) {
+  activeCliente = activeCliente===name ? null : name;
+  updateFilterBanner(); updateClienteCards(); updateSupCards(); updateKPIs();
+  rebuildCharts(); filterTable(); renderMapMarkers();
+}
+function clearClienteFilter() {
+  activeCliente=null;
+  updateFilterBanner(); updateClienteCards(); updateSupCards(); updateKPIs();
+  rebuildCharts(); filterTable(); renderMapMarkers();
+}
+function clearAllFilters() {
+  activeSup=null; activeCliente=null;
+  updateFilterBanner(); updateSupCards(); updateClienteCards(); updateKPIs();
+  rebuildCharts(); filterTable(); renderMapMarkers();
+}
+function updateFilterBanner() {
+  const banner=document.getElementById('fabanner');
+  const txt=document.getElementById('fatext');
+  const parts=[];
+  if(activeSup) parts.push(`Supervisor: <b>${activeSup}</b>`);
+  if(activeCliente) parts.push(`Cliente: <b>${activeCliente}</b>`);
+  if(parts.length>0) {
+    banner.classList.add('show');
+    txt.innerHTML = '&#9679; Filtrando por — ' + parts.join(' &nbsp;+&nbsp; ');
+    banner.style.borderBottomColor='rgba(169,219,33,0.18)';
+    banner.style.background='rgba(169,219,33,0.04)';
+  } else {
+    banner.classList.remove('show');
+  }
+}
+function updateSupCards() {
+  document.querySelectorAll('.scard').forEach(c=>{
+    const name=c.dataset.sup;
+    const col=SUP_C[name]?.c||'#a9db21';
+    c.style.setProperty('--sup-color',col);
+    if(activeSup===name) {
+      c.classList.add('selected');
+      c.style.borderColor=col;
+    } else {
+      c.classList.remove('selected');
+      c.style.borderColor='rgba(255,255,255,0.05)';
+    }
+  });
+}
+function updateKPIs() {
+  const op=getOp(); const amob=getAmob();
+  const mwpOp=op.reduce((s,u)=>s+(u.mwp||0),0);
+  const mwpAmob=amob.reduce((s,u)=>s+(u.mwp||0),0);
+  animCount('k-usinas', op.length, 0);
+  animCount('k-mwp', parseFloat(mwpOp.toFixed(1)), 1);
+  document.getElementById('k-usinas-mwp').textContent=mwpOp.toFixed(1)+' MWp instalados';
+  animCount('k-amob', amob.length, 0);
+  document.getElementById('k-amob-mwp').textContent=mwpAmob.toFixed(1)+' MWp pendentes';
+  const equipes=new Set(op.map(u=>u.equipe).filter(Boolean)).size;
+  animCount('k-equipes', equipes, 0);
+}
+
+// ── BUILD SUPERVISOR CARDS ──
+function buildSupCards() {
+  const op=ALL.filter(u=>u.status==='OPERAÇÃO');
+  const amob=ALL.filter(u=>u.status==='A MOBILIZAR');
+  const stats={};
+  Object.keys(SUP_C).forEach(k=>{stats[k]={usinas:0,mwp:0,aMob:0,aMobMwp:0};});
+  op.forEach(u=>{if(u.supervisor&&stats[u.supervisor]){stats[u.supervisor].usinas++;stats[u.supervisor].mwp+=(u.mwp||0);}});
+  amob.forEach(u=>{if(u.supervisor&&stats[u.supervisor]){stats[u.supervisor].aMob++;stats[u.supervisor].aMobMwp+=(u.mwp||0);}});
+  const maxU=Math.max(...Object.values(stats).map(s=>s.usinas))||1;
+  const grid=document.getElementById('supGrid'); grid.innerHTML='';
+  Object.entries(stats).forEach(([name,s],i)=>{
+    const col=SUP_C[name];
+    const initials=name.split(' ').map(w=>w[0]).slice(0,2).join('');
+    const pct=Math.round(s.usinas/maxU*100);
+    const div=document.createElement('div');
+    div.className='scard'; div.dataset.sup=name;
+    div.style.animationDelay=i*0.06+'s';
+    div.style.setProperty('--sup-color',col.c);
+    div.innerHTML=`
+      <div style="position:absolute;top:-20px;right:-20px;width:60px;height:60px;border-radius:50%;background:${col.c};opacity:.06;filter:blur(20px)"></div>
+      <div class="savatar" style="background:${col.bg};border-color:${col.bdr};color:${col.c}">${initials}</div>
+      <div class="sname">${name}</div>
+      <div class="sstats">
+        <div class="sstat"><span class="sslbl">Usinas ativas</span><span class="ssval" style="color:${col.c}">${s.usinas}</span></div>
+        <div class="sstat"><span class="sslbl">MWp</span><span class="ssval" style="color:${col.c}">${s.mwp.toFixed(1)}</span></div>
+      </div>
+      <div class="sbarbg"><div class="sbarfill" style="width:${pct}%;background:${col.c}"></div></div>
+      ${s.aMob>0?'<div class="smobtag" style="background:'+col.bg+';color:'+col.c+'">&#9203; '+s.aMob+' mob · '+s.aMobMwp.toFixed(1)+' MWp</div>':''}
+    `;
+    div.addEventListener('click',()=>toggleSupFilter(name));
+    grid.appendChild(div);
+  });
+}
+
+// ── CLIENTE CARDS ──
+const CLI_PAL = ['#a9db21','#3cb8ff','#ff7c3a','#b07dff','#ffc020','#00dfc0','#ff4f4f','#84cc16','#ec4899','#f59e0b'];
+function buildClienteCards() {
+  const op = ALL.filter(u=>u.status==='OPERAÇÃO');
+  const amob = ALL.filter(u=>u.status==='A MOBILIZAR');
+  const stats = {};
+  op.forEach(u=>{if(u.cliente){if(!stats[u.cliente])stats[u.cliente]={op:0,mwp:0,amob:0};stats[u.cliente].op++;stats[u.cliente].mwp+=(u.mwp||0);}});
+  amob.forEach(u=>{if(u.cliente){if(!stats[u.cliente])stats[u.cliente]={op:0,mwp:0,amob:0};stats[u.cliente].amob++;}});
+  const sorted = Object.entries(stats).sort((a,b)=>b[1].op-a[1].op);
+  const maxOp = sorted[0]?.[1].op || 1;
+  const grid = document.getElementById('cliGrid'); grid.innerHTML='';
+  sorted.forEach(([name,s],i)=>{
+    const col = CLI_PAL[i%CLI_PAL.length];
+    const pct = Math.round(s.op/maxOp*100);
+    const div = document.createElement('div');
+    div.className='clicard'; div.dataset.cli=name;
+    div.style.setProperty('--cli-color',col);
+    div.style.animationDelay=i*0.04+'s';
+    div.innerHTML=`
+      <div style="position:absolute;top:-15px;right:-15px;width:50px;height:50px;border-radius:50%;background:${col};opacity:.07;filter:blur(18px)"></div>
+      <div class="cliname">${name}</div>
+      <div class="clistats">
+        <div><div class="clistat-val" style="color:${col}">${s.op}</div><div class="clistat-lbl">em operação</div></div>
+        <div class="clistat-sub">${s.mwp.toFixed(1)} MWp${s.amob>0?'<br><span style="color:var(--amber)">+'+s.amob+' a mob</span>':''}</div>
+      </div>
+      <div class="clibarbg"><div class="clibarfill" style="width:${pct}%;background:${col}"></div></div>
+    `;
+    div.addEventListener('click',()=>toggleClienteFilter(name));
+    grid.appendChild(div);
+  });
+}
+function updateClienteCards() {
+  document.querySelectorAll('.clicard').forEach(c=>{
+    const name = c.dataset.cli;
+    const col = c.style.getPropertyValue('--cli-color');
+    if(activeCliente===name) { c.classList.add('selected'); }
+    else { c.classList.remove('selected'); }
+  });
+}
+const bO={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#6e7a9f',font:{family:'DM Sans',size:11},boxWidth:9}},tooltip:{backgroundColor:'#181d30',borderColor:'rgba(255,255,255,0.07)',borderWidth:1,titleColor:'#d8e0f5',bodyColor:'#6e7a9f',padding:11,cornerRadius:9,titleFont:{family:'DM Sans',size:11,weight:'600'},bodyFont:{family:'DM Sans',size:10}}},scales:{x:{ticks:{color:'#323d5e',font:{family:'DM Sans',size:10}},grid:{color:'rgba(255,255,255,0.03)'},border:{color:'transparent'}},y:{ticks:{color:'#323d5e',font:{family:'DM Sans',size:10}},grid:{color:'rgba(255,255,255,0.03)'},border:{color:'transparent'}}}};
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function buildEvol(){
+  dc('cEvol');
+  const evol=getEvol();
+  const ctx=document.getElementById('cEvol').getContext('2d');
+  const gG=ctx.createLinearGradient(0,0,0,220);gG.addColorStop(0,'rgba(169,219,33,0.22)');gG.addColorStop(1,'rgba(169,219,33,0)');
+  const gB=ctx.createLinearGradient(0,0,0,220);gB.addColorStop(0,'rgba(60,184,255,0.18)');gB.addColorStop(1,'rgba(60,184,255,0)');
+  charts['cEvol']=new Chart(ctx,{type:'line',data:{labels:evol.map(e=>e.mes),datasets:[
+    {label:'Usinas Acum.',data:evol.map(e=>e.cumUsinas),borderColor:'#a9db21',backgroundColor:gG,borderWidth:2.5,fill:true,tension:.42,pointRadius:4,pointBackgroundColor:'#a9db21',pointBorderColor:'#0f1220',pointBorderWidth:2,yAxisID:'y'},
+    {label:'MWp Acum.',data:evol.map(e=>e.cumMwp),borderColor:'#3cb8ff',backgroundColor:gB,borderWidth:2.5,fill:true,tension:.42,pointRadius:4,pointBackgroundColor:'#3cb8ff',pointBorderColor:'#0f1220',pointBorderWidth:2,yAxisID:'y1'}
+  ]},options:{...bO,plugins:{...bO.plugins,tooltip:{...bO.plugins.tooltip,callbacks:{label:c=>c.datasetIndex===0?` ${c.parsed.y} usinas`:` ${c.parsed.y.toFixed(1)} MWp`}}},scales:{x:bO.scales.x,y:{...bO.scales.y,position:'left',title:{display:true,text:'Usinas',color:'#a9db21',font:{size:9,family:'DM Sans'}}},y1:{...bO.scales.y,position:'right',title:{display:true,text:'MWp',color:'#3cb8ff',font:{size:9,family:'DM Sans'}},grid:{drawOnChartArea:false}}}}});
+}
+
+function buildClientes(){
+  dc('cClientes');
+  const op=getOp(); const c={};
+  op.forEach(u=>c[u.cliente]=(c[u.cliente]||0)+1);
+  const s=Object.entries(c).sort((a,b)=>b[1]-a[1]);
+  const ctx=document.getElementById('cClientes').getContext('2d');
+  charts['cClientes']=new Chart(ctx,{type:'doughnut',data:{labels:s.map(e=>e[0]),datasets:[{data:s.map(e=>e[1]),backgroundColor:PAL,borderColor:'#0f1220',borderWidth:2.5,hoverOffset:10}]},options:{...bO,cutout:'62%',plugins:{...bO.plugins,legend:{position:'right',labels:{color:'#6e7a9f',font:{family:'DM Sans',size:10},boxWidth:9,padding:9}},tooltip:{...bO.plugins.tooltip,callbacks:{label:c=>`  ${c.label}: ${c.parsed} usinas`}}},scales:{}}});
+}
+
+function buildUFs(){
+  dc('cUFs');
+  const op=getOp(); const amob=getAmob();
+  const ufs=[...new Set([...op,...amob].map(u=>u.uf).filter(Boolean))];
+  const cO={},cM={};
+  op.forEach(u=>{if(u.uf)cO[u.uf]=(cO[u.uf]||0)+1;});
+  amob.forEach(u=>{if(u.uf)cM[u.uf]=(cM[u.uf]||0)+1;});
+  const sorted=ufs.sort((a,b)=>((cO[b]||0)+(cM[b]||0))-((cO[a]||0)+(cM[a]||0))).slice(0,12);
+  const ctx=document.getElementById('cUFs').getContext('2d');
+  charts['cUFs']=new Chart(ctx,{type:'bar',data:{labels:sorted,datasets:[
+    {label:'Em Operação',data:sorted.map(u=>cO[u]||0),backgroundColor:'rgba(169,219,33,0.8)',borderRadius:4},
+    {label:'A Mobilizar', data:sorted.map(u=>cM[u]||0),backgroundColor:'rgba(255,192,32,0.75)',borderRadius:4}
+  ]},options:{...bO,plugins:{...bO.plugins,tooltip:{...bO.plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}}}}});
+}
+
+function buildRegioes(){
+  dc('cRegioes');
+  const op=getOp(); const amob=getAmob();
+  const regs=['Sudeste','Nordeste','Centro Oeste','Norte','Sul'];
+  const cO={},cM={};
+  op.forEach(u=>{if(u.regiao)cO[u.regiao]=(cO[u.regiao]||0)+1;});
+  amob.forEach(u=>{if(u.regiao)cM[u.regiao]=(cM[u.regiao]||0)+1;});
+  const ctx=document.getElementById('cRegioes').getContext('2d');
+  charts['cRegioes']=new Chart(ctx,{type:'bar',data:{labels:regs.map(r=>r.split(' ')[0]),datasets:[
+    {label:'Em Operação',data:regs.map(r=>cO[r]||0),backgroundColor:'rgba(60,184,255,0.75)',borderRadius:4},
+    {label:'A Mobilizar', data:regs.map(r=>cM[r]||0),backgroundColor:'rgba(255,124,58,0.75)',borderRadius:4}
+  ]},options:{...bO,plugins:{...bO.plugins,tooltip:{...bO.plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}}}}});
+}
+
+function buildFaixa(){
+  dc('cFaixa');
+  const op=ALL.filter(u=>u.status==='OPERAÇÃO');
+  const amob=ALL.filter(u=>u.status==='A MOBILIZAR');
+  const ordem=['0 kWp | 100kWp','100kWp | 500kWp','500kWp | 1MWp','1MWp | 3MWp','3MWp | 5MWp','5MWp | 10MWp'];
+  const cO={},cM={};
+  op.forEach(u=>{if(u.faixa)cO[u.faixa]=(cO[u.faixa]||0)+1;});
+  amob.forEach(u=>{if(u.faixa)cM[u.faixa]=(cM[u.faixa]||0)+1;});
+  const labels=ordem.filter(f=>cO[f]||cM[f]).map(f=>f.replace(' | ',' – '));
+  const keysF=ordem.filter(f=>cO[f]||cM[f]);
+  const ctx=document.getElementById('cFaixa').getContext('2d');
+  charts['cFaixa']=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+    {label:'Em Operação',data:keysF.map(f=>cO[f]||0),backgroundColor:'rgba(176,125,255,0.75)',borderRadius:4},
+    {label:'A Mobilizar', data:keysF.map(f=>cM[f]||0),backgroundColor:'rgba(255,192,32,0.55)',borderRadius:4}
+  ]},options:{...bO,indexAxis:'y',plugins:{...bO.plugins,tooltip:{...bO.plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.x}`}}},scales:{x:bO.scales.x,y:{...bO.scales.y,grid:{drawOnChartArea:false}}}}});
+}
+
+function buildPipeline(){
+  dc('cPipeline');
+  const amob=ALL.filter(u=>u.status==='A MOBILIZAR');
+  const sc={},sm={};
+  amob.forEach(u=>{const k=u.supervisor||'Não atribuído';sc[k]=(sc[k]||0)+1;sm[k]=(sm[k]||0)+(u.mwp||0);});
+  const keys=Object.keys(sc).sort((a,b)=>sc[b]-sc[a]);
+  const ctx=document.getElementById('cPipeline').getContext('2d');
+  charts['cPipeline']=new Chart(ctx,{type:'bar',data:{labels:keys.map(k=>k.split(' ').slice(0,2).join(' ')),datasets:[{data:keys.map(k=>sc[k]),backgroundColor:keys.map(k=>SUP_C[k]?.c||'#5a6480'),borderRadius:5,borderSkipped:false}]},options:{...bO,plugins:{...bO.plugins,legend:{display:false},tooltip:{...bO.plugins.tooltip,callbacks:{label:c=>{const k=keys[c.dataIndex];return ` ${c.parsed.y} usinas · ${(sm[k]||0).toFixed(1)} MWp`;}}}}}});
+  const maxM=Math.max(...keys.map(k=>sm[k]||0))||1;
+  document.getElementById('pipelineList').innerHTML=keys.map(k=>{
+    const col=SUP_C[k]?.c||'#5a6480';
+    const pct=Math.round((sm[k]||0)/maxM*100);
+    return `<div class="pitem"><div class="phdr"><span class="pname">${k}</span><span class="pval" style="color:${col}">${(sm[k]||0).toFixed(1)} MWp · ${sc[k]} usinas</span></div><div class="pbg"><div class="pfill" style="width:${pct}%;background:${col}"></div></div></div>`;
+  }).join('');
+}
+
+function buildMensal(){
+  dc('cMensal');
+  const evol=getEvol().filter(e=>e.usinas>0);
+  const ctx=document.getElementById('cMensal').getContext('2d');
+  charts['cMensal']=new Chart(ctx,{type:'bar',data:{labels:evol.map(e=>e.mes),datasets:[
+    {label:'Usinas',data:evol.map(e=>e.usinas),backgroundColor:'rgba(169,219,33,0.8)',borderColor:'#a9db21',borderWidth:1.5,borderRadius:5,yAxisID:'y'},
+    {label:'MWp',   data:evol.map(e=>e.mwp),backgroundColor:'rgba(60,184,255,0.55)',borderColor:'#3cb8ff',borderWidth:1.5,borderRadius:5,yAxisID:'y1'}
+  ]},options:{...bO,plugins:{...bO.plugins,tooltip:{...bO.plugins.tooltip,callbacks:{label:c=>c.datasetIndex===0?` ${c.parsed.y} usinas`:` ${c.parsed.y.toFixed(2)} MWp`}}},scales:{x:bO.scales.x,y:{...bO.scales.y,position:'left',title:{display:true,text:'Usinas',color:'#a9db21',font:{size:9}}},y1:{...bO.scales.y,position:'right',title:{display:true,text:'MWp',color:'#3cb8ff',font:{size:9}},grid:{drawOnChartArea:false}}}}});
+}
+
+function buildMwpSup(){
+  dc('cMwpSup');
+  const op=getOp(); const amob=getAmob();
+  const mOp={},mAmob={};
+  op.forEach(u=>{if(u.supervisor)mOp[u.supervisor]=(mOp[u.supervisor]||0)+(u.mwp||0);});
+  amob.forEach(u=>{if(u.supervisor)mAmob[u.supervisor]=(mAmob[u.supervisor]||0)+(u.mwp||0);});
+  const keys=Object.keys(SUP_C).filter(k=>mOp[k]||mAmob[k]).sort((a,b)=>(mOp[b]||0)-(mOp[a]||0));
+  const ctx=document.getElementById('cMwpSup').getContext('2d');
+  charts['cMwpSup']=new Chart(ctx,{type:'bar',data:{labels:keys.map(k=>k.split(' ').slice(0,2).join(' ')),datasets:[
+    {label:'Em Operação',data:keys.map(k=>parseFloat((mOp[k]||0).toFixed(1))),backgroundColor:keys.map(k=>SUP_C[k]?.c||'#5a6480'),borderRadius:5,borderSkipped:false},
+    {label:'A Mobilizar', data:keys.map(k=>parseFloat((mAmob[k]||0).toFixed(1))),backgroundColor:keys.map(k=>(SUP_C[k]?.c||'#5a6480')+'44'),borderRadius:5,borderSkipped:false}
+  ]},options:{...bO,indexAxis:'y',plugins:{...bO.plugins,tooltip:{...bO.plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.x.toFixed(1)} MWp`}}},scales:{x:bO.scales.x,y:{...bO.scales.y,grid:{drawOnChartArea:false}}}}});
+}
+
+function buildEquipes(){
+  dc('cEquipes');
+  const op=getOp(); const eq={};
+  op.forEach(u=>{if(u.equipe)eq[u.equipe]=(eq[u.equipe]||0)+(u.mwp||0);});
+  const s=Object.entries(eq).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const ctx=document.getElementById('cEquipes').getContext('2d');
+  charts['cEquipes']=new Chart(ctx,{type:'bar',data:{labels:s.map(e=>e[0]),datasets:[{data:s.map(e=>parseFloat(e[1].toFixed(1))),backgroundColor:s.map((_,i)=>PAL[i%PAL.length]),borderRadius:5}]},options:{...bO,plugins:{...bO.plugins,legend:{display:false},tooltip:{...bO.plugins.tooltip,callbacks:{label:c=>` ${c.parsed.y.toFixed(1)} MWp`}}},scales:{x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,maxRotation:40,font:{size:8,family:'DM Sans'}}},y:bO.scales.y}}});
+}
+
+// ── MAP ──
+let leafMap=null, allMarkers=[], mapLayerGroup=null;
+function buildMap(){
+  leafMap=L.map('map',{center:[-15,-50],zoom:4,zoomControl:true,attributionControl:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:18}).addTo(leafMap);
+  mapLayerGroup=L.layerGroup().addTo(leafMap);
+  const clusters=[...new Set(ALL.filter(u=>u.cluster).map(u=>u.cluster))].sort();
+  const equipes=[...new Set(ALL.filter(u=>u.equipe).map(u=>u.equipe))].sort();
+  const sups=[...new Set(ALL.filter(u=>u.supervisor).map(u=>u.supervisor))].sort();
+  const mfC=document.getElementById('mfCluster'),mfE=document.getElementById('mfEquipe'),mfS=document.getElementById('mfSup');
+  clusters.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;mfC.appendChild(o);});
+  equipes.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;mfE.appendChild(o);});
+  sups.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;mfS.appendChild(o);});
+  const data=ALL.filter(u=>u.lat&&u.lng);
+  allMarkers=data.map(u=>{
+    const isOp=u.status==='OPERAÇÃO';
+    const col=SUP_C[u.supervisor]?.c||'#7a85a8';
+    const r=isOp?Math.max(6,Math.min(19,(u.mwp||3)*1.7)):5;
+    const circle=L.circleMarker([u.lat,u.lng],{radius:r,fillColor:col,color:'#05070f',weight:isOp?1.5:1,opacity:1,fillOpacity:isOp?.88:.38,dashArray:isOp?null:'4,4'});
+    circle.bindPopup(`<div style="font-family:'DM Sans',sans-serif;color:#d8e0f5;min-width:200px;line-height:1.75">
+      <div style="font-weight:700;font-size:13px;margin-bottom:7px;color:${col};border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:6px">${u.nome}</div>
+      <div style="font-size:10px;color:#6e7a9f"><b style="color:#d8e0f5">Status:</b> ${u.status}</div>
+      <div style="font-size:10px;color:#6e7a9f;margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.05)">
+        <b style="color:#d8e0f5">Supervisor:</b> <span style="color:${col};font-weight:600">${u.supervisor||'—'}</span><br>
+        <b style="color:#d8e0f5">Técnico:</b> ${u.tecnico||'—'}<br>
+        <b style="color:#d8e0f5">Eletricista:</b> ${u.eletricista||'—'}<br>
+        <b style="color:#d8e0f5">Mantenedor:</b> ${u.mantenedor||'—'}
+      </div>
+      <div style="font-size:10px;color:#6e7a9f;margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.05)">
+        <b style="color:#d8e0f5">Equipe:</b> ${u.equipe||'—'} · <b style="color:#d8e0f5">Cluster:</b> ${u.cluster||'—'}<br>
+        <b style="color:#d8e0f5">Local:</b> ${u.cidade||'—'} · ${u.uf||'—'}
+      </div>
+      <div style="margin-top:5px;font-size:12px"><span style="color:${col};font-weight:700">${u.mwp} MWp</span>${u.tipologia?' <span style="color:#323d5e">· '+u.tipologia:''}</div>
+      ${u.mob?'<div style="font-size:10px;color:#6e7a9f;margin-top:3px"><b style="color:#d8e0f5">Mob.:</b> '+new Date(u.mob).toLocaleDateString('pt-BR')+'</div>':''}
+    </div>`,{className:'dpopup'});
+    return{marker:circle,data:u};
+  });
+  renderMapMarkers();
+  const lg=L.control({position:'bottomright'});
+  lg.onAdd=()=>{
+    const d=L.DomUtil.create('div');
+    d.style.cssText='background:#0f1220;border:1px solid rgba(255,255,255,0.06);border-radius:9px;padding:9px 12px;font-family:DM Sans,sans-serif;font-size:10px;color:#6e7a9f;min-width:130px';
+    d.innerHTML='<div style="font-weight:700;color:#323d5e;letter-spacing:.5px;text-transform:uppercase;font-size:9px;margin-bottom:6px">Supervisor</div>'+
+      Object.entries(SUP_C).map(([k,v])=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px"><div style="width:7px;height:7px;border-radius:50%;background:${v.c}"></div>${k.split(' ')[0]}</div>`).join('')+
+      '<div style="margin-top:6px;border-top:1px solid rgba(255,255,255,0.05);padding-top:5px;color:#323d5e;font-size:8px;letter-spacing:.3px">&#9679; Operação &nbsp; &#9675; A Mobilizar</div>';
+    return d;
+  };
+  lg.addTo(leafMap);
+}
+
+function renderMapMarkers(){
+  mapLayerGroup.clearLayers();
+  const fc=document.getElementById('mfCluster').value, fe=document.getElementById('mfEquipe').value, fs=document.getElementById('mfSup').value;
+  const supF=activeSup; const cliF=activeCliente;
+  let count=0;
+  allMarkers.forEach(({marker,data:u})=>{
+    const pass=(!fc||u.cluster===fc)&&(!fe||u.equipe===fe)&&(!fs||u.supervisor===fs)&&(!supF||u.supervisor===supF)&&(!cliF||u.cliente===cliF);
+    if(pass){marker.addTo(mapLayerGroup);count++;}
+  });
+  ['mfCluster','mfEquipe','mfSup'].forEach(id=>{const el=document.getElementById(id);el.classList.toggle('active',el.value!=='');});
+  document.getElementById('mapCount').textContent=(fc||fe||fs||supF)?`${count} usina${count!==1?'s':''} no filtro`:`${count} usinas`;
+  if((fc||fe||fs)&&count>0){
+    const ll=allMarkers.filter(({data:u})=>(!fc||u.cluster===fc)&&(!fe||u.equipe===fe)&&(!fs||u.supervisor===fs)&&u.lat&&u.lng).map(({data:u})=>[u.lat,u.lng]);
+    if(ll.length)leafMap.fitBounds(ll,{padding:[40,40],maxZoom:9});
+  } else if(!fc&&!fe&&!fs){leafMap.setView([-15,-50],4);}
+}
+
+function applyMapFilter(){
+  const fc=document.getElementById('mfCluster').value;
+  if(fc){
+    const matching=[...new Set(ALL.filter(u=>u.cluster===fc&&u.equipe).map(u=>u.equipe))].sort();
+    const mfE=document.getElementById('mfEquipe');const cur=mfE.value;
+    mfE.innerHTML='<option value="">Todas as Equipes</option>';
+    matching.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;mfE.appendChild(o);});
+  }
+  renderMapMarkers();
+}
+function resetMapFilter(){
+  document.getElementById('mfCluster').value='';document.getElementById('mfEquipe').value='';document.getElementById('mfSup').value='';
+  const equipes=[...new Set(ALL.filter(u=>u.equipe).map(u=>u.equipe))].sort();
+  const mfE=document.getElementById('mfEquipe');mfE.innerHTML='<option value="">Todas as Equipes</option>';
+  equipes.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;mfE.appendChild(o);});
+  renderMapMarkers();
+}
+
+// ── PERIOD ──
+function rebuildCharts(){buildEvol();buildClientes();buildUFs();buildRegioes();buildMwpSup();buildEquipes();buildMensal();}
+
+// ── TABLE ──
+let tFiltered=[...ALL];
+function populateTableFilters(){
+  const ts=document.getElementById('ttsup'),tc=document.getElementById('ttcluster'),tu=document.getElementById('ttuf'),tcli=document.getElementById('ttcliente');
+  [...new Set(ALL.map(u=>u.supervisor).filter(Boolean))].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;ts.appendChild(o);});
+  [...new Set(ALL.map(u=>u.cluster).filter(Boolean))].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;tc.appendChild(o);});
+  [...new Set(ALL.map(u=>u.uf).filter(Boolean))].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;tu.appendChild(o);});
+  [...new Set(ALL.map(u=>u.cliente).filter(Boolean))].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;tcli.appendChild(o);});
+}
+function stag(s){const m={'OPERAÇÃO':['s-op','Em Operação'],'A MOBILIZAR':['s-mob','A Mobilizar']};const[c,l]=m[s]||['s-op',s];return `<span class="stag ${c}">${l}</span>`;}
+function filterTable(){
+  const q=document.getElementById('tsearch').value.toLowerCase();
+  const sf=document.getElementById('tstatus').value;
+  const ss=document.getElementById('ttsup').value||activeSup||'';
+  const sc=document.getElementById('ttcluster').value;
+  const su=document.getElementById('ttuf').value;
+  const scli=document.getElementById('ttcliente').value||activeCliente||'';
+  tFiltered=ALL.filter(u=>{
+    const txt=[u.nome,u.supervisor,u.tecnico,u.eletricista,u.mantenedor,u.equipe,u.cluster,u.uf,u.cidade].join(' ').toLowerCase();
+    if(q&&!txt.includes(q))return false;
+    if(sf&&u.status!==sf)return false;
+    if(ss&&u.supervisor!==ss)return false;
+    if(sc&&u.cluster!==sc)return false;
+    if(su&&u.uf!==su)return false;
+    if(scli&&u.cliente!==scli)return false;
+    return true;
+  });
+  renderTable();
+}
+function renderTable(){
+  const items=tFiltered.slice(0,400);
+  document.getElementById('tbody').innerHTML=items.map(u=>{
+    const col=SUP_C[u.supervisor]?.c||'#7a85a8';
+    return `<tr><td class="nm">${u.nome}</td><td>${stag(u.status)}</td><td style="font-weight:500;color:var(--text)">${u.cliente||'—'}</td><td><span style="color:${col};font-weight:600">${u.supervisor||'—'}</span></td><td style="font-size:10px">${u.tecnico||'<span style="color:var(--text3)">—</span>'}</td><td style="font-size:10px">${u.eletricista||'<span style="color:var(--text3)">—</span>'}</td><td style="font-size:10px">${u.mantenedor||'<span style="color:var(--text3)">—</span>'}</td><td style="font-size:10px;color:#5a6480">${u.equipe||'—'}</td><td style="font-size:10px;color:#5a6480">${u.cluster||'—'}</td><td><span class="mbadge">${u.mwp?u.mwp.toFixed(3):'—'}</span></td><td style="font-size:10px;color:#5a6480">${u.faixa||'—'}</td><td style="font-size:10px;color:#5a6480">${u.tipologia||'—'}</td><td style="font-weight:600">${u.uf||'—'}</td><td style="font-size:10px;color:#5a6480">${u.cidade||'—'}</td><td style="font-size:10px;color:#5a6480">${u.mob?new Date(u.mob).toLocaleDateString('pt-BR'):'—'}</td></tr>`;
+  }).join('');
+  document.getElementById('tcount').textContent=`${tFiltered.length} registros`;
+  document.getElementById('tfootcount').textContent=`Exibindo ${Math.min(400,tFiltered.length)} de ${tFiltered.length} registros`;
+}
+
+// ── COUNTER ANIMATION ──
+function animCount(id, target, dec){
+  const el=document.getElementById(id); if(!el)return;
+  const dur=1100,st=performance.now();
+  const up=now=>{
+    const e=Math.min((now-st)/dur,1);
+    const ease=1-Math.pow(1-e,3);
+    const v=target*ease;
+    el.textContent=dec>0?v.toFixed(dec).replace('.',','):Math.round(v).toString();
+    if(e<1)requestAnimationFrame(up);
+  };
+  requestAnimationFrame(up);
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date('2026-04-30');
+  document.getElementById('currentDate').textContent=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('footerDate').textContent=now.toLocaleDateString('pt-BR');
+  buildSupCards(); buildClienteCards();
+  buildEvol();buildClientes();buildUFs();buildRegioes();buildFaixa();
+  buildPipeline();buildMensal();buildMwpSup();buildEquipes();buildMap();
+  populateTableFilters();filterTable();
+  animCount('k-usinas',86,0); animCount('k-mwp',333.9,1);
+  animCount('k-equipes',45,0); animCount('k-estados',16,0); animCount('k-amob',60,0);
+  const s=document.createElement('style');
+  s.textContent='.dpopup .leaflet-popup-content-wrapper{background:#0f1220!important;border:1px solid rgba(255,255,255,0.06)!important;border-radius:10px!important;box-shadow:0 10px 32px rgba(0,0,0,.8)!important;}.dpopup .leaflet-popup-tip{background:#0f1220!important;}.dpopup .leaflet-popup-close-button{color:#6e7a9f!important;font-size:14px!important;top:8px!important;right:8px!important;}';
+  document.head.appendChild(s);
+});
+// ══════════════════════════════════════════
+// EXPORT — XLSX
+// ══════════════════════════════════════════
+function exportXLSX() {
+  const cols = ['Usina','Status','Cliente','Supervisor O&M','Técnico O&M','Eletricista O&M','Mantenedor O&M','Equipe Cluster','Cluster','MWp','Faixa Potência','Tipologia','Estado','Cidade','Região','Mobilização'];
+  const rows = tFiltered.map(u => [
+    u.nome, u.status, u.cliente, u.supervisor, u.tecnico, u.eletricista, u.mantenedor,
+    u.equipe, u.cluster, u.mwp||'', u.faixa, u.tipologia,
+    u.uf, u.cidade, u.regiao,
+    u.mob ? new Date(u.mob).toLocaleDateString('pt-BR') : ''
+  ]);
+
+  const wb = XLSX.utils.book_new();
+  const wsData = [cols, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:28},{wch:14},{wch:18},{wch:22},{wch:22},{wch:22},{wch:22},
+    {wch:20},{wch:16},{wch:10},{wch:16},{wch:16},
+    {wch:8},{wch:20},{wch:16},{wch:14}
+  ];
+
+  // Header style (note: full styling requires xlsx-style, we'll use basic)
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const addr = XLSX.utils.encode_cell({r:0, c:C});
+    if (!ws[addr]) continue;
+    ws[addr].s = {
+      font: {bold:true, color:{rgb:'FFFFFF'}},
+      fill: {patternType:'solid', fgColor:{rgb:'0B6E3A'}},
+      alignment: {horizontal:'center', vertical:'center', wrapText:true},
+      border: {bottom:{style:'thin', color:{rgb:'a9db21'}}}
+    };
+  }
+
+  // Add summary sheet
+  const op   = tFiltered.filter(u=>u.status==='OPERAÇÃO');
+  const amob = tFiltered.filter(u=>u.status==='A MOBILIZAR');
+  const mwpOp   = op.reduce((s,u)=>s+(u.mwp||0),0);
+  const mwpAmob = amob.reduce((s,u)=>s+(u.mwp||0),0);
+  const summaryData = [
+    ['DASHBOARD O&M SOLAR — RESUMO EXECUTIVO'],
+    ['Gerado em', new Date().toLocaleString('pt-BR')],
+    [''],
+    ['INDICADORES', 'Valor'],
+    ['Usinas em Operação', op.length],
+    ['Potência em Operação (MWp)', parseFloat(mwpOp.toFixed(2))],
+    ['Usinas a Mobilizar', amob.length],
+    ['Potência a Mobilizar (MWp)', parseFloat(mwpAmob.toFixed(2))],
+    ['Total de Registros', tFiltered.length],
+    [''],
+    ['FILTROS APLICADOS', ''],
+    ['Supervisor', activeSup||'Todos'],
+    ['Cliente', activeCliente||'Todos'],
+    ['Status', document.getElementById('tstatus').value||'Todos'],
+    ['Cluster', document.getElementById('ttcluster').value||'Todos'],
+    ['Estado (UF)', document.getElementById('ttuf').value||'Todos'],
+  ];
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  wsSummary['!cols'] = [{wch:35},{wch:25}];
+  wsSummary['!merges'] = [{s:{r:0,c:0},e:{r:0,c:1}}];
+
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo');
+  XLSX.utils.book_append_sheet(wb, ws, 'Portfólio');
+
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `OeM_Solar_Portifolio_${stamp}.xlsx`);
+}
+
+// ══════════════════════════════════════════
+// EXPORT — PDF
+// ══════════════════════════════════════════
+function exportPDF() {
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'a3'});
+
+  // --- Header ---
+  doc.setFillColor(5, 7, 15);
+  doc.rect(0, 0, 420, 297, 'F');
+
+  doc.setFillColor(15, 18, 32);
+  doc.rect(0, 0, 420, 28, 'F');
+
+  doc.setTextColor(169,219,33);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.text('Dashboard O&M Solar', 14, 11);
+
+  doc.setTextColor(110, 122, 159);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.text('Operação & Manutenção — Usinas Fotovoltaicas', 14, 17);
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
+
+  // Active filters info
+  const filterParts = [];
+  if(activeSup) filterParts.push(`Supervisor: ${activeSup}`);
+  if(activeCliente) filterParts.push(`Cliente: ${activeCliente}`);
+  if(document.getElementById('tstatus').value) filterParts.push(`Status: ${document.getElementById('tstatus').value}`);
+  if(filterParts.length) {
+    doc.setTextColor(255,184,0);
+    doc.setFontSize(7.5);
+    doc.text(`Filtros ativos: ${filterParts.join(' + ')}`, 14, 26.5);
+  }
+
+  // KPIs box
+  const op   = tFiltered.filter(u=>u.status==='OPERAÇÃO');
+  const amob = tFiltered.filter(u=>u.status==='A MOBILIZAR');
+  const mwpOp = op.reduce((s,u)=>s+(u.mwp||0),0);
+  const mwpAmob = amob.reduce((s,u)=>s+(u.mwp||0),0);
+
+  const kpis = [
+    {label:'Usinas em Operação', value:String(op.length), color:[169,219,33]},
+    {label:'MWp Instalados', value:mwpOp.toFixed(1), color:[60,184,255]},
+    {label:'A Mobilizar', value:String(amob.length), color:[255,192,32]},
+    {label:'MWp Pendentes', value:mwpAmob.toFixed(1), color:[176,125,255]},
+    {label:'Total Registros', value:String(tFiltered.length), color:[255,124,58]},
+  ];
+
+  const kpiW = 74; const kpiX0 = 14;
+  kpis.forEach((k,i) => {
+    const x = kpiX0 + i*(kpiW+4);
+    doc.setFillColor(15,18,32);
+    doc.roundedRect(x, 31, kpiW, 16, 2, 2, 'F');
+    doc.setDrawColor(...k.color);
+    doc.setLineWidth(0.4);
+    doc.line(x+2, 31, x+kpiW-2, 31);
+    doc.setTextColor(...k.color);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(14);
+    doc.text(k.value, x+4, 41);
+    doc.setTextColor(110,122,159);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7);
+    doc.text(k.label.toUpperCase(), x+4, 45);
+  });
+
+  // --- Table ---
+  const cols = ['Usina','Status','Cliente','Supervisor','Técnico','Eletricista','Mantenedor','Equipe','Cluster','MWp','Faixa','Tipo','UF','Cidade','Mobilização'];
+  const rows = tFiltered.map(u => [
+    u.nome||'', u.status||'', u.cliente||'', u.supervisor||'', u.tecnico||'',
+    u.eletricista||'', u.mantenedor||'', u.equipe||'', u.cluster||'',
+    u.mwp ? u.mwp.toFixed(3) : '', u.faixa||'', u.tipologia||'',
+    u.uf||'', u.cidade||'',
+    u.mob ? new Date(u.mob).toLocaleDateString('pt-BR') : ''
+  ]);
+
+  doc.autoTable({
+    startY: 51,
+    head: [cols],
+    body: rows,
+    theme: 'plain',
+    styles: {
+      font: 'helvetica', fontSize: 6.5, cellPadding: 2.5,
+      textColor: [160, 172, 210], fillColor: [15, 18, 32],
+      lineColor: [30, 35, 55], lineWidth: 0.15,
+      overflow: 'ellipsize'
+    },
+    headStyles: {
+      fillColor: [9, 12, 24], textColor: [110, 122, 159],
+      fontStyle: 'bold', fontSize: 6, halign: 'left',
+      cellPadding: {top:2.5, right:2, bottom:2.5, left:2.5},
+    },
+    alternateRowStyles: { fillColor: [12, 14, 25] },
+    columnStyles: {
+      0: {cellWidth:24, fontStyle:'bold', textColor:[216,224,245]},
+      1: {cellWidth:14},
+      2: {cellWidth:18, textColor:[176,125,255], fontStyle:'bold'},
+      3: {cellWidth:22, textColor:[169,219,33]},
+      4: {cellWidth:20},
+      5: {cellWidth:20},
+      6: {cellWidth:20},
+      7: {cellWidth:20},
+      8: {cellWidth:16},
+      9: {cellWidth:12, halign:'right', textColor:[60,184,255]},
+      10:{cellWidth:16},
+      11:{cellWidth:14},
+      12:{cellWidth:8,  halign:'center'},
+      13:{cellWidth:18},
+      14:{cellWidth:16},
+    },
+    margin: {left:14, right:14},
+    didDrawPage: (data) => {
+      // Footer on each page
+      const pgH = doc.internal.pageSize.height;
+      doc.setFillColor(9, 12, 24);
+      doc.rect(0, pgH-8, 420, 8, 'F');
+      doc.setTextColor(50, 61, 94);
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica','normal');
+      doc.text('Dashboard O&M Solar — Usinas Fotovoltaicas', 14, pgH-2.5);
+      doc.text(`Pág. ${data.pageNumber}`, 406, pgH-2.5, {align:'right'});
+    },
+    willDrawCell: (data) => {
+      // Color status cell
+      if(data.section==='body' && data.column.index===1) {
+        const val = data.cell.raw;
+        if(val==='OPERAÇÃO') data.cell.styles.textColor=[169,219,33];
+        else if(val==='A MOBILIZAR') data.cell.styles.textColor=[255,192,32];
+      }
+    }
+  });
+
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  doc.save(`OeM_Solar_Portifolio_${stamp}.pdf`);
+}
+
+// ══════════════════════════════════════════
+// UPDATE — DATA SOURCE
+// ══════════════════════════════════════════
+let pendingFile = null;
+
+function openModal() {
+  document.getElementById('updateModal').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeModal() {
+  document.getElementById('updateModal').classList.remove('show');
+  document.body.style.overflow='';
+  pendingFile=null;
+  document.getElementById('dzFile').textContent='';
+  document.getElementById('modalBtn').disabled=true;
+  document.getElementById('modalProgress').classList.remove('show');
+  document.getElementById('progBar').style.width='0%';
+  document.getElementById('fileInput').value='';
+}
+
+// Drag & drop on dropzone
+document.addEventListener('DOMContentLoaded', () => {
+  const dz = document.getElementById('dropzone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if(file) handleFile(file);
+  });
+});
+
+function handleFile(file) {
+  if(!file) return;
+  if(!file.name.match(/\.xlsx?$/i)) {
+    alert('Por favor selecione um arquivo .xlsx ou .xls');
+    return;
+  }
+  pendingFile = file;
+  document.getElementById('dzFile').textContent = `✓ ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  document.getElementById('modalBtn').disabled = false;
+}
+
+function setProgress(pct, msg) {
+  document.getElementById('progBar').style.width = pct+'%';
+  document.getElementById('modalStatus').textContent = msg;
+}
+
+function processFile() {
+  if(!pendingFile) return;
+  const btn = document.getElementById('modalBtn');
+  btn.disabled = true;
+  btn.textContent = 'Processando...';
+  document.getElementById('modalProgress').classList.add('show');
+  setProgress(10, 'Lendo arquivo...');
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      setProgress(30, 'Decodificando planilha...');
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
+
+      // Try 'Operações' sheet first, fallback to first sheet
+      const sheetName = wb.SheetNames.find(s=>s.toLowerCase().includes('opera')) || wb.SheetNames[0];
+      setProgress(50, `Lendo aba "${sheetName}"...`);
+      const ws = wb.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(ws, {raw:false, dateNF:'yyyy-mm-dd'});
+
+      setProgress(70, 'Transformando dados...');
+      const newData = transformRows(json);
+
+      if(newData.length===0) {
+        setProgress(0,'');
+        alert('Nenhum registro encontrado com status OPERAÇÃO ou A MOBILIZAR. Verifique se a planilha está no formato correto.');
+        btn.disabled=false; btn.textContent='Carregar Dados';
+        return;
+      }
+
+      setProgress(90, `${newData.length} registros encontrados. Atualizando dashboard...`);
+
+      setTimeout(() => {
+        applyNewData(newData);
+        setProgress(100, `✓ Dashboard atualizado com ${newData.length} registros!`);
+        document.getElementById('modalStatus').style.color='var(--lime)';
+        setBadge('', `Atualizado às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`);
+        setTimeout(closeModal, 1800);
+      }, 300);
+
+    } catch(err) {
+      setProgress(0,'');
+      alert('Erro ao processar o arquivo: '+err.message+'\n\nVerifique se o arquivo é um Excel válido (.xlsx).');
+      btn.disabled=false; btn.textContent='Carregar Dados';
+    }
+  };
+  reader.readAsArrayBuffer(pendingFile);
+}
+
+// ── Data transformation helpers ──
+function transformRows(json) {
+  return json.map(r => ({
+    nome:        r['OPERAÇÃO']||r['OPERACAO']||r['Usina']||'',
+    status:      (r['STATUS']||'').trim(),
+    cliente:     r['CLIENTE']||'',
+    uf:          r['UF']||'',
+    cidade:      r['CIDADE']||'',
+    mwp:         parseFloat(r['CAPACIDADE INSTALADA (MWp)']||r['CAPACIDADE INSTALADA (MWp)']||r['MWp']||0)||null,
+    supervisor:  r['RESPONSÁVEL O&M']||r['RESPONSAVEL O&M']||r['Supervisor']||'',
+    tecnico:     r['Técnico O&M']||r['Tecnico O&M']||r['Técnico']||'',
+    eletricista: r['Eletricista O&M']||r['Eletricista']||'',
+    mantenedor:  r['Mantenedor O&M']||r['Mantenedor']||'',
+    equipe:      r['Equipe Cluster']||r['EQUIPE']||'',
+    cluster:     r['CLUSTER']||'',
+    faixa:       r['FAIXA POTÊNCIA']||r['FAIXA POTENCIA']||r['Faixa Potência']||'',
+    tipologia:   r['TIPOLOGIA']||'',
+    regiao:      r['REGIÃO']||r['REGIAO']||r['Região']||'',
+    mob:         r['Data Mobilização']||r['Data Mobilizacao']||null,
+    lat:         parseFloat(r['LATITUDE'])||null,
+    lng:         parseFloat(r['LONGITUDE'])||null,
+  })).filter(r => {
+    const s = (r.status||'').trim().toUpperCase();
+    return s === 'OPERAÇÃO' || s === 'OPERACAO' || s === 'A MOBILIZAR';
+  });
+}
+
+function applyNewData(newData) {
+  ALL.length = 0;
+  newData.forEach(r => ALL.push(r));
+  activeSup = null; activeCliente = null;
+  tFiltered = [...ALL];
+  buildSupCards(); buildClienteCards();
+  rebuildCharts(); buildFaixa(); buildPipeline();
+  if(leafMap) renderMapMarkers();
+  ['ttsup','ttcluster','ttuf','ttcliente'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const first = el.options[0];
+    el.innerHTML = ''; el.appendChild(first);
+  });
+  populateTableFilters();
+  filterTable();
+  updateKPIs();
+  updateFilterBanner();
+}
+
+// ═══════════════════════════════════════════════════════
+// GIST AUTO-SYNC — GitHub Gist (Power Automate → GitHub)
+// ═══════════════════════════════════════════════════════
+const GIST_URL = 'https://gist.githubusercontent.com/fillipefigueiro-source/bb3f9a7046fbbbae3d040b3900e934fa/raw/data.json';
+const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+let syncTimer = null;
+
+// ── setBadge state: '' | 'syncing' | 'error' | 'ok' ──
+function setBadge(state, text) {
+  const badge = document.getElementById('syncBadge');
+  const label = document.getElementById('syncLabel');
+  if (!badge || !label) return;
+  badge.className = 'hbadge ' + (state === 'ok' ? '' : state);
+  label.textContent = text;
+}
+
+// ── Main sync function ──
+async function syncSharePoint() {
+  const btn = document.getElementById('btnRefresh');
+  if (btn) { btn.disabled = true; btn.classList.add('syncing'); }
+  setBadge('syncing', 'Sincronizando...');
+
+  try {
+    // Add cache-busting timestamp so browser doesn't serve stale cache
+    const url = GIST_URL + '?t=' + Date.now();
+    const res = await fetch(url);
+
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + res.statusText);
+
+    const text = await res.text();
+    if (!text || text.trim() === '' || text.trim() === '[]') {
+      setBadge('', 'Aguardando dados...');
+      if (btn) { btn.disabled = false; btn.classList.remove('syncing'); }
+      return;
+    }
+
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch(e) {
+      throw new Error('JSON inválido: ' + e.message);
+    }
+
+    // Accept both raw Excel row format and pre-transformed format
+    let newData;
+    // Always transform — handles both raw Excel rows and pre-processed data
+    newData = transformRows(json);
+
+    if (newData.length === 0) {
+      setBadge('', 'Sem dados novos');
+      if (btn) { btn.disabled = false; btn.classList.remove('syncing'); }
+      return;
+    }
+
+    applyNewData(newData);
+
+    const ts = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    setBadge('ok', '✓ Atualizado ' + ts);
+    document.getElementById('syncBadge').className = 'hbadge';
+
+    // Hide config box if open
+    const box = document.getElementById('spInfoBox');
+    if (box) box.classList.remove('show');
+
+  } catch(err) {
+    console.error('Sync error:', err);
+    setBadge('error', 'Erro — clique para detalhes');
+    document.getElementById('spInfoBox').classList.add('show');
+    const status = document.getElementById('spUrlStatus');
+    if (status) {
+      status.style.color = 'var(--red)';
+      status.textContent = '✗ ' + err.message;
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.classList.remove('syncing'); }
+  }
+}
+
+// ── Auto-sync on load + periodic refresh ──
+document.addEventListener('DOMContentLoaded', () => {
+  // First sync after 1.5s (let charts render first)
+  setTimeout(() => syncSharePoint(), 1500);
+  // Repeat every 5 minutes
+  syncTimer = setInterval(() => syncSharePoint(), SYNC_INTERVAL_MS);
+});
+
+
+// Close modal on overlay click
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('updateModal').addEventListener('click', (e) => {
+    if(e.target===document.getElementById('updateModal')) closeModal();
+  });
+});
+
+</script>
+</body>
+</html>
